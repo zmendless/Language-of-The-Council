@@ -1,0 +1,4 @@
+# Word forms that are NOT counted for a word, after a check of their contexts (evo kwic).
+#   word <TAB> form <TAB> why
+# Each line is a decision to report in the method section.
+örnek	örneğin	nearly always "for example" (an adverb), not "of the example"

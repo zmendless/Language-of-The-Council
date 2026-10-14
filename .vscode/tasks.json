@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build and run viewer",
+            "type": "shell",
+            "command": "make && ./viewer",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "Run tests",
+            "type": "shell",
+            "command": "make test",
+            "group": "test",
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}

@@ -1,0 +1,181 @@
+# Competing words for the same meaning, one row per word:
+#   concept <TAB> role <TAB> word <TAB> theme
+# concept  the meaning, named by today's word
+# role     old       the Ottoman (Arabic or Persian) word
+#          proposal  the 1935 TDK guide's proposal, when it differs from today's word
+#          new       today's standard word
+# theme    meclis (parliamentary procedure), devlet (state and politics), genel (everyday
+#          words), eğitim (education and science); used to group and colour the charts
+#
+# These are well-known pairs, which overstates how often the Language Reform succeeded
+# (pairs that failed are less famous). The real sample comes from the 1935 guide (see
+# README); this list is for building and testing the analysis. Known ambiguities, to
+# check with `evo kwic`: bakan is also "looking", vekil now mostly "deputy" (Başkan
+# Vekili), örneğin is "for example", özel is also a surname, barış and savaş are names.
+# örgüt after 1990 is mostly "terör örgütü" (a change of meaning, not only of word);
+# değer is also the verb form "it is worth".
+# Feminine and plural forms (umumiye, hudut as plural of had) are counted through the
+# lexicon; do not list them as separate words, or their uses would be counted twice.
+
+birleşim	old	inikat	meclis
+birleşim	new	birleşim	meclis
+oturum	old	celse	meclis
+oturum	new	oturum	meclis
+toplantı	old	içtima	meclis
+toplantı	new	toplantı	meclis
+tutanak	old	zabıt	meclis
+tutanak	new	tutanak	meclis
+önerge	old	takrir	meclis
+önerge	new	önerge	meclis
+tasarı	old	layiha	meclis
+tasarı	new	tasarı	meclis
+komisyon	old	encümen	meclis
+komisyon	new	komisyon	meclis
+görüşme	old	müzakere	meclis
+görüşme	new	görüşme	meclis
+oy	old	rey	meclis
+oy	new	oy	meclis
+seçim	old	intihap	meclis
+seçim	new	seçim	meclis
+milletvekili	old	mebus	meclis
+milletvekili	new	milletvekili	meclis
+üye	old	aza	meclis
+üye	new	üye	meclis
+kurul	old	heyet	meclis
+kurul	new	kurul	meclis
+genel	old	umumi	meclis
+genel	new	genel	meclis
+
+cumhurbaşkanı	old	reisicumhur	devlet
+cumhurbaşkanı	new	cumhurbaşkanı	devlet
+başbakan	old	başvekil	devlet
+başbakan	new	başbakan	devlet
+bakan	old	vekil	devlet
+bakan	proposal	yeke	devlet
+bakan	new	bakan	devlet
+başkan	old	reis	devlet
+başkan	new	başkan	devlet
+bağımsızlık	old	istiklal	devlet
+bağımsızlık	new	bağımsızlık	devlet
+özgürlük	old	hürriyet	devlet
+özgürlük	new	özgürlük	devlet
+ekonomi	old	iktisat	devlet
+ekonomi	new	ekonomi	devlet
+savaş	old	harp	devlet
+savaş	new	savaş	devlet
+barış	old	sulh	devlet
+barış	new	barış	devlet
+sınır	old	hudut	devlet
+sınır	new	sınır	devlet
+ülke	old	memleket	devlet
+ülke	new	ülke	devlet
+
+yıl	old	sene	genel
+yıl	new	yıl	genel
+sorun	old	mesele	genel
+sorun	new	sorun	genel
+sonuç	old	netice	genel
+sonuç	new	sonuç	genel
+önemli	old	mühim	genel
+önemli	new	önemli	genel
+özel	old	hususi	genel
+özel	new	özel	genel
+süre	old	müddet	genel
+süre	new	süre	genel
+soru	old	sual	genel
+soru	new	soru	genel
+yanıt	old	cevap	genel
+yanıt	new	yanıt	genel
+sözcük	old	kelime	genel
+sözcük	new	sözcük	genel
+örnek	old	misal	genel
+örnek	new	örnek	genel
+görev	old	vazife	genel
+görev	new	görev	genel
+olanak	old	imkan	genel
+olanak	new	olanak	genel
+gereksinim	old	ihtiyaç	genel
+gereksinim	new	gereksinim	genel
+gerekli	old	lazım	genel
+gerekli	new	gerekli	genel
+inceleme	old	tetkik	genel
+inceleme	new	inceleme	genel
+onay	old	tasdik	genel
+onay	new	onay	genel
+değişiklik	old	tadil	genel
+değişiklik	new	değişiklik	genel
+kent	old	şehir	genel
+kent	new	kent	genel
+
+okul	old	mektep	eğitim
+okul	new	okul	eğitim
+öğrenci	old	talebe	eğitim
+öğrenci	new	öğrenci	eğitim
+öğretmen	old	muallim	eğitim
+öğretmen	new	öğretmen	eğitim
+bilim	old	ilim	eğitim
+bilim	new	bilim	eğitim
+doğa	old	tabiat	eğitim
+doğa	new	doğa	eğitim
+uçak	old	tayyare	eğitim
+uçak	new	uçak	eğitim
+# Added 2026-10-14, checked against the counts: pairs whose forms collide with common
+# words were left out (il: ile; gelir, gider: verbs; batı, dil, çalışma, tahsil).
+tüzük	old	nizamname	meclis
+tüzük	new	tüzük	meclis
+öneri	old	teklif	meclis
+öneri	new	öneri	meclis
+yasa	old	kanun	devlet
+yasa	new	yasa	devlet
+savunma	old	müdafaa	devlet
+savunma	new	savunma	devlet
+örgüt	old	teşkilat	devlet
+örgüt	new	örgüt	devlet
+devrim	old	inkılap	devlet
+devrim	new	devrim	devlet
+tarım	old	ziraat	devlet
+tarım	new	tarım	devlet
+içişleri	old	dahiliye	devlet
+içişleri	new	içişleri	devlet
+dışişleri	old	hariciye	devlet
+dışişleri	new	dışişleri	devlet
+ödenek	old	tahsisat	devlet
+ödenek	new	ödenek	devlet
+eşitlik	old	müsavat	devlet
+eşitlik	new	eşitlik	devlet
+bucak	old	nahiye	devlet
+bucak	new	bucak	devlet
+durum	old	vaziyet	genel
+durum	new	durum	genel
+oran	old	nispet	genel
+oran	new	oran	genel
+düşünce	old	fikir	genel
+düşünce	new	düşünce	genel
+anlam	old	mana	genel
+anlam	new	anlam	genel
+temel	old	esas	genel
+temel	new	temel	genel
+yaşam	old	hayat	genel
+yaşam	new	yaşam	genel
+başarı	old	muvaffakiyet	genel
+başarı	new	başarı	genel
+geçici	old	muvakkat	genel
+geçici	new	geçici	genel
+değer	old	kıymet	genel
+değer	new	değer	genel
+deneyim	old	tecrübe	genel
+deneyim	new	deneyim	genel
+kuzey	old	şimal	genel
+kuzey	new	kuzey	genel
+güney	old	cenup	genel
+güney	new	güney	genel
+doğu	old	şark	genel
+doğu	new	doğu	genel
+eğitim	old	maarif	eğitim
+eğitim	new	eğitim	eğitim
+uzman	old	mütehassıs	eğitim
+uzman	new	uzman	eğitim
+sınav	old	imtihan	eğitim
+sınav	new	sınav	eğitim
+üniversite	old	darülfünun	eğitim
+üniversite	new	üniversite	eğitim
