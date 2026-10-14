@@ -219,6 +219,21 @@ button, input, select { font: inherit; color: inherit; }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.92rem; color: var(--muted); }
 .msg { color: var(--old); font-size: 0.92rem; min-height: 1.4em; margin-top: 6px; }
 
+/* dating a text */
+.era-legend { margin-top: 12px; align-items: center; }
+.era-legend .ramp { display: inline-block; width: 160px; height: 10px; border-radius: 5px; vertical-align: -1px; margin-inline: 8px;
+    background: linear-gradient(90deg, var(--old), color-mix(in oklab, var(--old) 50%, var(--new)), var(--new)); }
+#tarih textarea {
+    width: 100%; margin-top: 8px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); resize: vertical; font: 400 1rem/1.55 var(--body);
+}
+#tarih .presets { margin-top: 10px; }
+.d-out { margin-top: 18px; min-height: 2.6em; }
+.d-out .guess { font-family: var(--display); font-weight: 800; font-size: var(--step-3); line-height: 1.1; }
+.d-out p { color: var(--muted); }
+.d-colored { margin-top: 12px; font: 400 1.05rem/1.7 var(--body); color: var(--muted); }
+.d-colored .w { border-radius: 4px; padding: 0 1px; }
+
 /* method */
 .method { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px 32px; }
 .method h3 { margin-bottom: 6px; }
@@ -239,6 +254,38 @@ svg text { fill: var(--muted); font-family: var(--body); }
 svg .axis { font: 12px var(--mono); fill: var(--faint); }
 svg .label { fill: var(--ink); }
 
+
+/* ---------------------------------------------------------------- motion
+   Sections rise in as they arrive. Charts over time sweep in from left to right, as time
+   passes; the timeline (ordered by year) from top to bottom. Each plays once. */
+.reveal { opacity: 0; transform: translateY(22px); }
+.reveal.in { opacity: 1; transform: none; transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: calc(var(--i, 0) * 60ms); }
+@keyframes sweepRight { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes sweepDown { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+.sweep:not(.play):not(.done) > svg, .sweep-down:not(.play):not(.done) > svg { clip-path: inset(0 100% 0 0); }
+.sweep-down:not(.play):not(.done) > svg { clip-path: inset(0 0 100% 0); }
+.sweep.play > svg { animation: sweepRight 1.9s cubic-bezier(0.45, 0, 0.2, 1) both; }
+.sweep-down.play > svg { animation: sweepDown 2.2s cubic-bezier(0.45, 0, 0.2, 1) both; }
+.count { font-variant-numeric: tabular-nums; }
+
+/* reading progress and theme switch, in the navigation bar */
+.toc { position: sticky; }
+.progress { position: absolute; left: 0; bottom: -1px; height: 2px; width: 100%; background: var(--new); transform-origin: 0 50%; transform: scaleX(0); }
+.toc ul { align-items: center; }
+.theme-item { margin-left: auto; }
+.theme { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.theme:hover { color: var(--ink); }
+
+/* method: one line each, opened on demand */
+.method details { border-top: 1px solid var(--line); padding-top: 10px; }
+.method summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.method summary::-webkit-details-marker { display: none; }
+.method summary h3 { display: inline; }
+.method summary::after { content: "+"; font: 500 1.2rem var(--mono); color: var(--faint); }
+.method details[open] summary::after { content: "–"; }
+.method summary .gist { display: block; color: var(--muted); font-size: 0.95rem; margin-top: 2px; }
+.method details p { margin-top: 8px; }
+
 @media (max-width: 860px) {
     .split { grid-template-columns: 1fr; }
     .tm-top { grid-template-columns: 1fr; }
@@ -251,6 +298,8 @@ svg .label { fill: var(--ink); }
 }
 @media (prefers-reduced-motion: reduce) {
     .swap.turn span { animation: none; }
+    .reveal { opacity: 1; transform: none; }
+    .sweep > svg, .sweep-down > svg { clip-path: none !important; animation: none !important; }
     .originbar span { transition: none; }
 }
 </style>
@@ -266,6 +315,7 @@ svg .label { fill: var(--ink); }
 </header>
 
 <nav class="toc" aria-label="Bölümler">
+    <div class="progress" id="progress" aria-hidden="true"></div>
     <ul>
         <li><a href="#zaman">Zaman makinesi</a></li>
         <li><a href="#takvim">Değişim takvimi</a></li>
@@ -276,7 +326,9 @@ svg .label { fill: var(--ink); }
         <li><a href="#onyillar">On yıllar</a></li>
         <li><a href="#siralama">En çok kullanılanlar</a></li>
         <li><a href="#ara">Sözcük ara</a></li>
+        <li><a href="#tarih">Metnin yaşı</a></li>
         <li><a href="#yontem">Yöntem</a></li>
+        <li class="theme-item"><button class="theme" id="theme" type="button" aria-label="Açık ya da koyu tema" title="Tema"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 2.5a7.5 7.5 0 0 1 0 15z" fill="currentColor"/></svg></button></li>
     </ul>
 </nav>
 
@@ -285,8 +337,8 @@ svg .label { fill: var(--ink); }
         <div class="wrap">
             <div class="head">
                 <p class="eyebrow">Zaman makinesi</p>
-                <h2>Bir yıl seçin, meclisi dinleyin</h2>
-                <p class="intro">Her satır bir kavram: solda eski sözcük, sağda bugünkü sözcük. Çubuk, o yıllarda konuşmalarda hangisinin ne kadar kullanıldığını gösteriyor. <b>Oynat</b>'a basın ve yüz yılı yarım dakikada izleyin.</p>
+                <h2 id="zaman-title">Bir yıl seçin, meclisi dinleyin</h2>
+                <p class="intro">Her satır bir kavram: solda eski, sağda bugünkü sözcük. Yüz yıl yarım dakikada.</p>
             </div>
             <div class="controls">
                 <button class="btn primary" id="tm-play" type="button">Oynat</button>
@@ -312,7 +364,7 @@ svg .label { fill: var(--ink); }
         <div class="wrap">
             <div class="head">
                 <p class="eyebrow">Değişim takvimi</p>
-                <h2>Yeni sözcük ne zaman öne geçti?</h2>
+                <h2 id="takvim-title">Yeni sözcük ne zaman öne geçti?</h2>
                 <p class="intro" id="takvim-intro"></p>
             </div>
             <div class="split">
@@ -331,7 +383,7 @@ svg .label { fill: var(--ink); }
             <div class="head">
                 <p class="eyebrow">Bir kavram yakından</p>
                 <h2 id="kavram-title"></h2>
-                <p class="intro">Noktalar beş yıllık dönemlerde her sözcüğün payı (dikey çizgi: %95 güven aralığı), eğri uydurulan S-eğrisi. Altta tutanaklardan gerçek cümleler.</p>
+                <p class="intro">Noktalar: her beş yılda sözcüklerin payı. Eğri: S-eğrisi. Altta tutanaklardan gerçek cümleler.</p>
             </div>
             <div class="picker">
                 <label for="kavram-select">Kavram</label>
@@ -347,7 +399,7 @@ svg .label { fill: var(--ink); }
         <div class="wrap">
             <div class="head">
                 <p class="eyebrow">Yüz yılın parmak izi</p>
-                <h2>Her kavram, her yıl</h2>
+                <h2 id="parmakizi-title">Her kavram, her yıl</h2>
                 <p class="intro" id="parmakizi-intro"></p>
             </div>
             <div class="panel"><div class="chart" id="heatmap"></div></div>
@@ -358,7 +410,7 @@ svg .label { fill: var(--ink); }
         <div class="wrap">
             <div class="head">
                 <p class="eyebrow">Söz varlığının kökeni</p>
-                <h2>Meclisin sözcükleri nereden geliyor?</h2>
+                <h2 id="koken-title">Meclisin sözcükleri nereden geliyor?</h2>
                 <p class="intro" id="koken-intro"></p>
             </div>
             <div class="panel"><div class="chart" id="origins"></div></div>
@@ -369,7 +421,7 @@ svg .label { fill: var(--ink); }
         <div class="wrap">
             <div class="head">
                 <p class="eyebrow">Sözcüklerin ömrü</p>
-                <h2>1920'lerin sözcüklerinden kaçı hâlâ yaşıyor?</h2>
+                <h2 id="omur-title">1920'lerin sözcüklerinden kaçı hâlâ yaşıyor?</h2>
                 <p class="intro" id="omur-intro"></p>
             </div>
             <div class="split">
@@ -386,8 +438,8 @@ svg .label { fill: var(--ink); }
         <div class="wrap">
             <div class="head">
                 <p class="eyebrow">On yılların sözcükleri</p>
-                <h2>Her on yılın kendine özgü sözcükleri</h2>
-                <p class="intro">Bir on yılda öteki yıllara göre en belirgin isim ve sıfatlar. Büyüklük ne kadar belirgin olduğunu, renk kökenini gösteriyor. Dilin değişimiyle birlikte tarih de görünüyor. Bir sözcüğe dokunun: yüz yıllık seyri açılır.</p>
+                <h2>Her on yılın sözcükleri, o yılların tarihini de anlatıyor</h2>
+                <p class="intro">Büyüklük: ne kadar belirgin. Renk: köken. Bir sözcüğe dokunun, yüz yılı açılsın.</p>
             </div>
             <div class="legend" id="decades-legend" style="margin-bottom: 14px"></div>
             <div class="decades" id="decades"></div>
@@ -398,8 +450,8 @@ svg .label { fill: var(--ink); }
         <div class="wrap">
             <div class="head">
                 <p class="eyebrow">En çok kullanılanlar</p>
-                <h2>Meclisin en sık sözcükleri, yıl yıl</h2>
-                <p class="intro">Her yıl en çok kullanılan on iki isim ve sıfat, milyon sözcükte kaç kez geçtiğine göre. Renk kökenini gösteriyor: kırmızılar azalıyor, maviler çoğalıyor.</p>
+                <h2>En sık sözcükler: kırmızılar çekiliyor, maviler geliyor</h2>
+                <p class="intro">Her yıl en çok kullanılan on iki isim ve sıfat. Renk: köken.</p>
             </div>
             <div class="controls">
                 <button class="btn primary" id="race-play" type="button">Oynat</button>
@@ -419,7 +471,7 @@ svg .label { fill: var(--ink); }
             <div class="head">
                 <p class="eyebrow">Sözcük ara</p>
                 <h2>İstediğiniz sözcüğün yüz yılı</h2>
-                <p class="intro">Bir isim ya da sıfat yazın (sözlük biçimiyle: <i>yıl</i>, <i>millet</i>, <i>hürriyet</i>). Beş sözcüğe kadar karşılaştırabilirsiniz. Her sözcük bütün çekimli biçimleriyle sayılır.</p>
+                <p class="intro">Sözlük biçimiyle yazın: <i>yıl</i>, <i>millet</i>, <i>hürriyet</i>. Beş sözcüğe kadar.</p>
             </div>
             <form class="search" id="search-form">
                 <label for="search-input" class="eyebrow">Sözcük</label>
@@ -431,6 +483,39 @@ svg .label { fill: var(--ink); }
             <div class="selected" id="selected"></div>
             <div class="presets" id="presets"><span>Hazır karşılaştırmalar:</span></div>
             <div class="panel" style="margin-top: 14px"><div class="chart" id="words"></div></div>
+        </div>
+    </section>
+
+    <section class="chapter" id="tarih">
+        <div class="wrap">
+            <div class="head">
+                <p class="eyebrow">Metnin yaşı</p>
+                <h2 id="tarih-title">Bir metni okuyup yılını tahmin eden program</h2>
+                <p class="intro" id="tarih-intro"></p>
+            </div>
+            <div class="split">
+                <div class="panel">
+                    <label for="d-text" class="eyebrow">Metin</label>
+                    <textarea id="d-text" rows="6" placeholder="Buraya bir paragraf yapıştırın: bir gazete haberi, eski bir mektup, bir dilekçe…"></textarea>
+                    <div class="presets" id="d-presets"><span>Deneyin:</span></div>
+                    <div class="d-out" id="d-out" aria-live="polite"></div>
+                    <div class="chart" id="d-strip"></div>
+                    <p class="d-colored" id="d-colored"></p>
+                    <div class="legend era-legend" id="d-legend"></div>
+                </div>
+                <aside class="side">
+                    <div class="panel">
+                        <h3>Ne kadar iyi?</h3>
+                        <p class="sub" id="d-test-sub"></p>
+                        <div class="chart" id="d-test"></div>
+                    </div>
+                    <div class="panel">
+                        <h3>Bütün oturumlar</h3>
+                        <p class="sub">Her nokta bir oturum: gerçek yılı ve programın tahmini. Çizgiye ne kadar yakınsa o kadar doğru.</p>
+                        <div class="chart" id="d-scatter"></div>
+                    </div>
+                </aside>
+            </div>
         </div>
     </section>
 
@@ -510,6 +595,21 @@ function decadeName(d, loc) {   // 1920 → "1920'ler" or "1920'lerde"
     const front = lastVowelFront(lastWord(d));
     return d + "'" + (front ? "ler" : "lar") + (loc ? (front ? "de" : "da") : "");
 }
+// Suffixes after a number, by how it is read: %73'ten (abl), %34'e (dat), %66'sı (poss).
+function numberSuffix(n, kind) {
+    const w = lastWord(n), end = w[w.length - 1];
+    let v = "e";
+    for(let i = w.length - 1; i >= 0; i--) if("aeıioöuü".includes(w[i])) { v = w[i]; break; }
+    const front = "eiöü".includes(v), vowelEnd = "aeıioöuü".includes(end), hard = "çfhkpsşt".includes(end);
+    const high = {a: "ı", ı: "ı", o: "u", u: "u", e: "i", i: "i", ö: "ü", ü: "ü"}[v];
+    if(kind === "abl") return (hard ? "t" : "d") + (front ? "en" : "an");
+    if(kind === "dat") return (vowelEnd ? "y" : "") + (front ? "e" : "a");
+    return (vowelEnd ? "s" : "") + high;
+}
+const suffixed = (text, n, kind) => `${text}'${numberSuffix(n, kind)}`;
+// A number that counts up when it comes into view.
+const counter = n => `<span class="count" data-n="${n}">${n}</span>`;
+
 function fold(s) {   // as trFold in src/text.c: Turkish lowercase, circumflex dropped
     return s.trim().toLocaleLowerCase("tr-TR").replace(/â/g, "a").replace(/î/g, "i").replace(/û/g, "u");
 }
@@ -697,23 +797,28 @@ function legend(container) {
 
 // ---------------------------------------------------------------- hero
 
-function hero() {
-    const millions = (D.words / 1e6).toLocaleString("tr-TR", {maximumFractionDigits: 1});
-    document.getElementById("lede").innerHTML =
-        `Yüz yılda Türkçenin sözcükleri nasıl değişti? Türkiye Büyük Millet Meclisi'nde 1920'den bugüne konuşulan <b>${millions} milyon sözcüğü</b> saydık: hangi sözcük eskisinin yerini ne zaman aldı, hangisi tutmadı, hangisi geri döndü.`;
-
-    const a = originShares(1924), b = originShares(2020);
-    // The 15 years in which the most meanings changed.
+// The 15 years in which the most meanings changed.
+function busiestYears() {
     let best = 1920, most = 0;
     for(let y = 1920; y <= 2009; y++) {
         const n = CROSSED.filter(c => c.fit.crossover >= y && c.fit.crossover < y + 15).length;
         if(n > most) { most = n; best = y; }
     }
+    return {best, most};
+}
+
+function hero() {
+    const millions = (D.words / 1e6).toLocaleString("tr-TR", {maximumFractionDigits: 1});
+    document.getElementById("lede").innerHTML =
+        `Meclis'te 1920'den bugüne konuşulan <b>${millions} milyon sözcük</b>. Hangi sözcük eskisinin yerini ne zaman aldı, hangisi tutmadı, hangisi geri döndü?`;
+
+    const a = originShares(1924), b = originShares(2020);
+    const {best, most} = busiestYears();
     const stats = document.getElementById("stats");
     const add = (big, text) => { const d = html("div", {class: "stat"}, stats); d.innerHTML = `<div class="big">${big}</div><p>${text}</p>`; };
-    if(a && b) add(`<span class="from">${pct(a[0] + a[1])}</span> → <span class="to">${pct(b[0] + b[1])}</span>`,
+    if(a && b) add(`<span class="from">%${counter(Math.round(100 * (a[0] + a[1])))}</span> → <span class="to">%${counter(Math.round(100 * (b[0] + b[1])))}</span>`,
                    "Arapça ve Farsça kökenli isim ve sıfatların payı, 1920'lerin başından 2020'lere");
-    add(`${CROSSED.length} / ${D.concepts.length}`, "kavramda yeni sözcük eskisini geçti");
+    add(`${counter(CROSSED.length)} / ${D.concepts.length}`, "kavramda yeni sözcük eskisini geçti");
     add(`${best}–${best + 14}`, `değişimlerin en yoğun olduğu on beş yıl: ${CROSSED.length} geçişten ${most} tanesi`);
 
     // Old word crossed out, today's word, the year it took over, one meaning after another.
@@ -896,6 +1001,8 @@ function showConcept(c) {
     if(f.uncertain && c.crossed) html("span", {class: "chip", style: "color: var(--old)"}, chips, "az veri: eğri belirsiz");
     drawConcept();
     drawQuotes();
+    const box = document.getElementById("concept");
+    if(box.classList.contains("done")) playOnce(box);   // a newly picked concept draws in
 }
 
 function drawConcept() {
@@ -1372,43 +1479,401 @@ function drawSearch() {
     hover.addEventListener("pointerleave", () => { hideTip(); line.setAttribute("opacity", 0); });
 }
 
+// ---------------------------------------------------------------- dating a text
+
+// The tokenizer of src/text.c (tokNext), so that the page splits words as the counts did.
+const APOSTROPHES = "'`´ʼ‘’";
+const NAME_SUFFIXES = new Set(["da", "de", "ta", "te", "dan", "den", "tan", "ten", "ya", "ye", "na", "ne",
+    "yı", "yi", "yu", "yü", "nı", "ni", "nu", "nü", "ın", "in", "un", "ün", "nın", "nin", "nun", "nün",
+    "la", "le", "yla", "yle", "lar", "ler", "ları", "leri", "daki", "deki", "taki", "teki", "nda", "nde", "ndan", "nden",
+    "dır", "dir", "dur", "dür", "tır", "tir", "tur", "tür"]);
+function isLetter(ch) {   // trIsLetter: Latin letters up to Latin Extended-A
+    const c = ch ? ch.codePointAt(0) : 0;
+    return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 0xC0 && c <= 0x17F && c !== 0xD7 && c !== 0xF7);
+}
+const isUpperCh = ch => ch !== ch.toLocaleLowerCase("tr-TR");
+const isDigit = ch => ch >= "0" && ch <= "9";
+const HIGH = "iıuü";
+function isOrdinal(w) {   // "üncü", "nci": after a number, not a word
+    const c = [...w];
+    if(c.length === 4 && !HIGH.includes(c[0])) return false;
+    if(c.length !== 3 && c.length !== 4) return false;
+    const i = c.length - 3;
+    return c[i] === "n" && "cçe".includes(c[i + 1]) && HIGH.includes(c[i + 2]);
+}
+// Words of text, folded, with where they start and end (in characters of [...text]).
+function tokenize(text) {
+    const ch = [...text], n = ch.length, out = [];
+    let i = 0, afterNumber = false;
+    const letters = j => { let w = ""; while(j < n && (isLetter(ch[j]) || ch[j] === "­")) { if(ch[j] !== "­") w += fold(ch[j]); j++; } return [w, j]; };
+    while(i < n) {
+        if(isDigit(ch[i])) {
+            while(i < n && isDigit(ch[i])) i++;
+            if(APOSTROPHES.includes(ch[i]) && isLetter(ch[i + 1])) i = letters(i + 1)[1];   // 1948'de
+            afterNumber = true;
+            continue;
+        }
+        if(!isLetter(ch[i])) {
+            if(ch[i] !== " " && ch[i] !== "\t" && ch[i] !== ".") afterNumber = false;
+            i++;
+            continue;
+        }
+        const begin = i, capital = isUpperCh(ch[i]);
+        let w = "";
+        while(i < n) {
+            if(isLetter(ch[i])) { w += fold(ch[i]); i++; continue; }
+            if(ch[i] === "­" && isLetter(ch[i + 1])) { i++; continue; }
+            if(APOSTROPHES.includes(ch[i]) && isLetter(ch[i + 1])) {
+                const [suffix, end] = letters(i + 1);
+                if(capital || (suffix.length >= 2 && NAME_SUFFIXES.has(suffix))) { i = end; break; }   // Türkiye'nin
+                i++;   // mes'ele: a spelling mark inside the word
+                continue;
+            }
+            break;
+        }
+        if(afterNumber && isOrdinal(w)) { afterNumber = false; continue; }
+        afterNumber = false;
+        out.push({w, start: begin, end: i});
+    }
+    return out;
+}
+
+// The model of src/dating.c: word counts per five years, and the chance of a word in each.
+const DM = D.dating, NB = DM.tok.length;
+const FORM = new Map(DM.f.map((f, i) => [f, i]));
+const FORM_TOTAL = DM.c.map(c => c.reduce((a, b) => a + b, 0));
+const DM_TOTAL = DM.tok.reduce((a, b) => a + b, 0);
+const binStart = b => DM.first + DM.step * b;
+const binMiddle = b => binStart(b) + Math.floor(DM.step / 2);
+const binName = b => `${binStart(b)}–${binStart(b) + DM.step - 1}`;
+const usable = b => DM.tok[b] >= DM.minTokens;
+function formChance(i, b) {
+    const overall = (FORM_TOTAL[i] + 0.5) / (DM_TOTAL + 0.5 * DM.f.length);
+    return ((DM.c[i][b] || 0) + DM.prior * overall) / (DM.tok[b] + DM.prior);
+}
+// Log-likelihood of the forms (indices) in each period; best is the most likely period.
+function dateForms(forms) {
+    const ll = new Array(NB).fill(-Infinity);
+    let best = -1;
+    for(let b = 0; b < NB; b++) {
+        if(!usable(b)) continue;
+        let s = 0;
+        for(const i of forms) s += Math.log(formChance(i, b));
+        ll[b] = s;
+        if(best < 0 || s > ll[best]) best = b;
+    }
+    return {best, ll};
+}
+// When a word was used: the rate-weighted middle year, how spread out, and the busiest period.
+const formInfo = new Map();
+function formYear(i) {
+    if(formInfo.has(i)) return formInfo.get(i);
+    let w = 0, s = 0, sq = 0, peak = -1, peakRate = 0;
+    for(let b = 0; b < NB; b++) {
+        if(!usable(b)) continue;
+        const rate = (DM.c[i][b] || 0) / DM.tok[b], m = binMiddle(b);
+        w += rate; s += rate * m; sq += rate * m * m;
+        if(rate > peakRate) { peakRate = rate; peak = b; }
+    }
+    const year = s / w, spread = Math.sqrt(Math.max(0, sq / w - year * year));
+    // A word used evenly over the century has a spread of about 30 years and tells nothing.
+    const info = {year, spread, peak, strength: clamp((27 - spread) / 13, 0, 1)};
+    formInfo.set(i, info);
+    return info;
+}
+// Old words red, today's blue, words used all century long in the text colour.
+function eraColor(year) {
+    const t = clamp((year - 1935) / (2005 - 1935), 0, 1);
+    return `color-mix(in oklab, var(--old) ${Math.round((1 - t) * 100)}%, var(--new))`;
+}
+// The text with every telling word coloured by its era; tips name the busiest period.
+function colorText(container, text, tokens) {
+    container.textContent = "";
+    const ch = [...text];
+    let at = 0;
+    for(const t of tokens) {
+        const i = FORM.get(t.w);
+        if(i === undefined) continue;
+        const info = formYear(i);
+        if(info.strength < 0.15) continue;
+        container.append(ch.slice(at, t.start).join(""));
+        const span = html("span", {class: "w"}, container, ch.slice(t.start, t.end).join(""));
+        const col = eraColor(info.year);
+        span.style.color = col;
+        span.style.fontWeight = info.strength > 0.5 ? 700 : 500;
+        span.style.backgroundColor = `color-mix(in srgb, ${col} ${Math.round(info.strength * 16)}%, transparent)`;
+        span.addEventListener("pointermove", ev => showTip(`<b>${esc(t.w)}</b><br>en sık kullanıldığı dönem <span class="num">${binName(info.peak)}</span>`, ev));
+        span.addEventListener("pointerleave", hideTip);
+        at = t.end;
+    }
+    container.append(ch.slice(at).join(""));
+}
+function eraLegend(container) {
+    container.innerHTML = `<span>Renkler: sözcüğün en çok kullanıldığı yıllar</span><span><span style="color: var(--old); font-weight: 700">eski</span><i class="ramp"></i><span style="color: var(--new); font-weight: 700">yeni</span></span><span>Siyah: her dönemde kullanılan sözcük</span>`;
+}
+// A year axis with labelled markers: [{year, label, color, band}].
+function yearStrip(container, marks, words) {
+    const narrow = container.clientWidth < 560;
+    const rows = words ? 4 : 0, top = (words ? 30 : 46) + rows * 22;
+    const [s, w] = newSvg(container, top + 46);
+    const x = scale(1918, 2026, 14, w - 14), base = top + 14;
+    svg("line", {x1: x(1920), x2: x(2024), y1: base, y2: base, stroke: css("--line"), "stroke-width": 6, "stroke-linecap": "round"}, s);
+    for(let y = 1920; y <= 2020; y += narrow ? 20 : 10) {
+        svg("text", {x: x(y), y: base + 26, "text-anchor": "middle", class: "axis"}, s).textContent = y;
+    }
+    for(const m of marks.filter(m => m.band)) {
+        svg("rect", {x: x(m.band[0]), y: 8, width: x(m.band[1] + 1) - x(m.band[0]), height: base - 2, rx: 4,
+                     fill: m.color, opacity: 0.14}, s);
+    }
+    // The text's telling words above the axis, at their middle year, in rows so they do not overlap.
+    if(words) {
+        const ends = new Array(rows).fill(-1e9);
+        for(const wd of words) {
+            const px = x(wd.year), width = wd.w.length * 7.5 + 6;
+            const r = ends.findIndex(e => e < px - width / 2);
+            if(r < 0) continue;
+            ends[r] = px + width / 2;
+            svg("text", {x: px, y: top - 6 - r * 22, "text-anchor": "middle", "font-size": 13, "font-weight": 700,
+                         style: `fill: ${eraColor(wd.year)}`}, s).textContent = wd.w;
+        }
+    }
+    // Markers on the axis, their labels above it, a row higher when two would overlap.
+    const placed = [];
+    marks.forEach(m => {
+        if(m.year === undefined) return;
+        svg("circle", {cx: x(m.year), cy: base, r: 8, fill: m.color, stroke: css("--surface"), "stroke-width": 2}, s);
+        const width = m.label.length * 7.5 + 10;
+        let row = 0;
+        while(placed.some(p => p.row === row && Math.abs(p.x - x(m.year)) < (p.width + width) / 2)) row++;
+        placed.push({x: x(m.year), width, row});
+        svg("text", {x: x(m.year), y: base - 16 - row * 16, "text-anchor": "middle", "font-size": 13, "font-weight": 700,
+                     style: `fill: ${m.color}`}, s).textContent = m.label;
+    });
+    // Labels near the edges stay inside.
+    for(const t of s.querySelectorAll("text")) {
+        const b = t.getBBox();
+        if(b.x < 2) t.setAttribute("x", +t.getAttribute("x") + 2 - b.x);
+        if(b.x + b.width > w - 2) t.setAttribute("x", +t.getAttribute("x") - (b.x + b.width - w + 2));
+    }
+}
+
+// ---------------------------------------------------------------- dating any text
+
+const DATE_PRESETS = [
+    {label: "Nutuk'un ilk cümleleri (1927)", text: "1919 senesi Mayısının 19'uncu günü Samsun'a çıktım. Vaziyet ve manzarai umumiye: Osmanlı Devletinin dahil bulunduğu grup, Harbi Umumide mağlup olmuş, Osmanlı ordusu her tarafta zedelenmiş, şeraiti ağır bir mütarekename imza edilmiş."},
+    {label: "Gençliğe Hitabe (1927)", text: "Ey Türk gençliği! Birinci vazifen, Türk istiklâlini, Türk Cumhuriyetini, ilelebet muhafaza ve müdafaa etmektir. Mevcudiyetinin ve istikbalinin yegâne temeli budur. Bu temel, senin en kıymetli hazinendir. İstikbalde dahi, seni bu hazineden mahrum etmek isteyecek dahilî ve haricî bedhahların olacaktır. Bir gün, istiklâl ve cumhuriyeti müdafaa mecburiyetine düşersen, vazifeye atılmak için, içinde bulunacağın vaziyetin imkân ve şeraitini düşünmeyeceksin!"},
+    {label: "Bugünün Türkçesiyle", text: "Değerli milletvekilleri, gençlerimizin eğitim ve iş olanaklarını artırmak için hazırladığımız bu yasa teklifi, özellikle teknoloji alanında yeni fırsatlar yaratacaktır."},
+];
+
+// How far off the program is for a text of n known words, from the test on unseen sittings.
+function typicalError(n) {
+    const t = DM.test;
+    let k = 0;   // the nearest tested length, on a log scale
+    t.len.forEach((len, j) => { if(len && Math.abs(Math.log(len / n)) < Math.abs(Math.log(t.len[k] / n))) k = j; });
+    return t.err[k];
+}
+function dateText() {
+    const text = document.getElementById("d-text").value, out = document.getElementById("d-out");
+    const tokens = tokenize(text), known = tokens.filter(t => FORM.has(t.w));
+    const strip = document.getElementById("d-strip"), colored = document.getElementById("d-colored");
+    if(known.length < 3) {
+        out.innerHTML = tokens.length ? "<p>Biraz daha uzun bir metin gerekiyor: program en az birkaç bilinen sözcük arıyor.</p>" : "";
+        strip.textContent = "";
+        colored.textContent = "";
+        return;
+    }
+    const {best} = dateForms(known.map(t => FORM.get(t.w)));
+    out.innerHTML = `<div class="guess">${binName(best)}</div><p>${tokens.length} sözcükten ${known.length} tanesini tanıyor. Bu uzunluktaki metinlerde ortalama ${nf.format(typicalError(known.length))} yıl yanılıyor.</p>`;
+    // Each telling word once, the most telling first.
+    const seen = new Set(), words = [];
+    for(const t of known) {
+        if(seen.has(t.w)) continue;
+        seen.add(t.w);
+        const info = formYear(FORM.get(t.w));
+        if(info.strength >= 0.35) words.push({w: t.w, year: info.year, strength: info.strength});
+    }
+    words.sort((a, b) => b.strength - a.strength);
+    yearStrip(strip, [{label: "Tahmin", color: css("--proposal"), band: [binStart(best), binStart(best) + DM.step - 1]}], words);
+    colorText(colored, text, tokens);
+}
+function setupDating() {
+    const t = DM.test, whole = t.len.indexOf(0);
+    document.getElementById("tarih-title").textContent = `Sözcükler, bir metnin yaşını ortalama ${nf.format(t.err[whole])} yıl hatayla ele veriyor`;
+    document.getElementById("tarih-intro").innerHTML =
+        `Program metni anlamıyor: sözcüklerini her beş yılın sözcük sıklıklarıyla karşılaştırıyor (<i>sene</i> 1925'in, <i>yıl</i> 2015'in sözcüğü). Görmediği oturumlarda denendi; okumadan tahmin etseydi ${nf.format(t.chance)} yıl yanılırdı. Bir metin yapıştırın:`;
+    const presets = document.getElementById("d-presets"), area = document.getElementById("d-text");
+    for(const p of DATE_PRESETS) {
+        const b = html("button", {class: "btn", type: "button"}, presets, p.label);
+        b.addEventListener("click", () => { area.value = p.text; dateText(); });
+    }
+    let timer = 0;
+    area.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(dateText, 250); });
+    area.value = DATE_PRESETS[0].text;
+    eraLegend(document.getElementById("d-legend"));
+    document.getElementById("d-test-sub").textContent = "Ortalama hata, metnin uzunluğuna göre. Her oturum, cildi modelden çıkarılarak tahmin edildi.";
+}
+function drawDatingTest() {
+    const t = DM.test, box = document.getElementById("d-test");
+    const rows = t.len.map((n, k) => ({label: n ? `${n} sözcük` : "bütün oturum", err: t.err[k], w5: t.w5[k]}));
+    rows.push({label: "okumadan", err: t.chance, chance: true});
+    const rowH = 30, [s, w] = newSvg(box, rows.length * rowH + 8);
+    const x = scale(0, niceMax(Math.max(...rows.map(r => r.err))), 100, w - 64);
+    rows.forEach((r, k) => {
+        const y = 4 + k * rowH;
+        svg("text", {x: 92, y: y + 18, "text-anchor": "end", "font-size": 13, class: r.chance ? "" : "label"}, s).textContent = r.label;
+        svg("rect", {x: 100, y: y + 5, width: Math.max(2, x(r.err) - 100), height: rowH - 12, rx: 4,
+                     fill: r.chance ? css("--faint") : css("--proposal")}, s);
+        svg("text", {x: x(r.err) + 6, y: y + 18, "font-size": 13, class: "num"}, s).textContent = nf.format(r.err) + " yıl";
+    });
+    // True year against the guess, one dot per sitting.
+    const sc = document.getElementById("d-scatter"), [s2, w2] = newSvg(sc, Math.min(300, sc.clientWidth));
+    const h2 = Math.min(300, w2), x2 = scale(1918, 2026, 36, w2 - 8), y2 = scale(1918, 2026, h2 - 24, 8);
+    for(let y = 1920; y <= 2020; y += 20) {
+        svg("line", {x1: x2(y), x2: x2(y), y1: y2(1918), y2: y2(2026), stroke: css("--line")}, s2);
+        svg("line", {x1: x2(1918), x2: x2(2026), y1: y2(y), y2: y2(y), stroke: css("--line")}, s2);
+        svg("text", {x: x2(y), y: h2 - 8, "text-anchor": "middle", class: "axis"}, s2).textContent = y;
+        svg("text", {x: 32, y: y2(y) + 4, "text-anchor": "end", class: "axis"}, s2).textContent = y;
+    }
+    svg("line", {x1: x2(1918), y1: y2(1918), x2: x2(2026), y2: y2(2026), stroke: css("--faint"), "stroke-dasharray": "4 4"}, s2);
+    t.year.forEach((y, i) => svg("circle", {cx: x2(y), cy: y2(t.guess[i] + (i % 5 - 2) * 0.5), r: 3, fill: css("--proposal"), opacity: 0.55}, s2));
+}
+
 // ---------------------------------------------------------------- text that depends on the numbers
 
+// Each chapter's title states its finding, with the numbers of the data.
 function writeIntros() {
-    const n = CROSSED.length;
-    document.getElementById("takvim-intro").innerHTML =
-        `Her satır bir kavram: bugünkü sözcüğün kullanımın yarısını geçtiği yıl ve %95 güven aralığı. ${D.concepts.length} kavramın <b>${n} tanesinde</b> yeni sözcük öne geçti. Bir satıra dokunun: o kavramın ayrıntısı ve tutanaklardan örnek cümleler açılır.`;
+    const set = (id, text) => { document.getElementById(id).innerHTML = text; };
     const ahead = y => D.concepts.filter(c => observed(c, y) > 0.5).length;
-    document.getElementById("parmakizi-intro").innerHTML =
-        `Her satır bir kavram, her sütun bir yıl. Kırmızı: eski sözcük önde; mavi: bugünkü sözcük önde. 1950'lerdeki kırmızı şeride bakın: ${locative(1950)} ${ahead(1950)} kavramda yeni sözcük öndeydi, ${locative(1955)} yalnızca ${ahead(1955)} kavramda. 1952'de anayasa eski diline döndürülünce eski sözcükler de meclise döndü. ${locative(1965)} yeni sözcük ${ahead(1965)} kavramda öndeydi.`;
+    const n = D.concepts.length;
+    const leading = y => D.concepts.filter(c => observedShare(c, y) > 0.5).length;   // as the time machine counts
+    set("zaman-title", `${n} kavramdan ${locative(1920)} ${leading(1920)} tanesinde yeni sözcük öndeydi, ${locative(2020)} ${leading(2020)} tanesinde`);
+    const {best, most} = busiestYears();
+    set("takvim-title", `${CROSSED.length} değişimin ${most} tanesi on beş yılda oldu: ${best}–${best + 14}`);
+    set("takvim-intro", "Her nokta, yeni sözcüğün kullanımın yarısını geçtiği yıl; çizgi %95 güven aralığı. Bir satıra dokunun.");
+    set("parmakizi-title", "1952'den sonra eski sözcükler meclise geri döndü");
+    set("parmakizi-intro", `Kırmızı: eski sözcük önde. Mavi: bugünkü. ${locative(1950)} ${ahead(1950)} kavramda yeni sözcük öndeydi, ${locative(1955)} yalnızca ${ahead(1955)}. O yıl anayasa eski diline dönmüştü.`);
     const a = originShares(1924), b = originShares(2020);
-    if(a && b) document.getElementById("koken-intro").innerHTML =
-        `Konuşmalardaki her isim ve sıfatın kökeni Vikisözlük'ten. 1920'lerin başında Arapça ve Farsça kökenli sözcüklerin payı <b>${pct(a[0] + a[1])}</b>, Türkçe kökenlilerin ${pct(a[2])}. 2020'lerde Arapça ve Farsça <b>${pct(b[0] + b[1])}</b>, Türkçe ${pct(b[2])}, Batı dilleri ${pct(b[3])}.`;
+    if(a && b) {
+        const from = Math.round(100 * (a[0] + a[1])), to = Math.round(100 * (b[0] + b[1]));
+        set("koken-title", `Arapça ve Farsça sözcüklerin payı ${suffixed("%" + from, from, "abl")} ${suffixed("%" + to, to, "dat")} indi`);
+    }
+    set("koken-intro", "Konuşmalardaki her isim ve sıfatın kökeni, Vikisözlük'e göre.");
     const sv = D.survival;
     let lastD = 10;
     while(lastD > 0 && sv.alive[5][lastD] === null) lastD--;
-    document.getElementById("omur-intro").innerHTML =
-        `1920'lerde meclisin en çok kullandığı ${sv.top} isim ve sıfatı aldık. Bir sözcük, sıklığı 1920'lerdekinin en az dörtte biri olduğu sürece “yaşıyor” sayıldı. ${decadeName(1920 + 10 * lastD, true)} Türkçe kökenlilerin <b>${pct(sv.alive[2][lastD])}</b> kadarı hâlâ yaşıyor, Arapça kökenlilerin yalnızca <b>${pct(sv.alive[0][lastD])}</b> kadarı.`;
+    const tr = Math.round(100 * sv.alive[2][lastD]), ar = Math.round(100 * sv.alive[0][lastD]);
+    set("omur-title", `1920'lerin Türkçe sözcüklerinin ${suffixed("%" + tr, tr, "poss")} hâlâ yaşıyor, Arapçaların ${suffixed("%" + ar, ar, "poss")}`);
+    set("omur-intro", `1920'lerin en sık ${sv.top} isim ve sıfatı. Sıklığı o günkünün dörtte birinin altına inen sözcük “kayboldu” sayıldı.`);
 }
 
 function writeMethod() {
     const millions = (D.words / 1e6).toLocaleString("tr-TR", {maximumFractionDigits: 2});
+    const t = DM.test, whole = t.len.indexOf(0);
     const items = [
-        ["Veri", `TBMM tutanakları, 1920–2023: aynı türden metin, yüz yıl boyunca. Örneklem ${nf.format(D.sittings)} oturum, ${millions} milyon sözcük. Her dönemden eşit aralıklı ciltler ve birleşimler seçildi. Metin, TBMM'nin yayımladığı PDF'lerden çıkarıldı.`],
-        ["Temizleme", "İçindekiler, önceki tutanağın özeti, oturum kapandıktan sonraki ekler ve konuşmacı etiketleri (BAŞKAN —) sayılmadı: bunlar konuşma değil, kâtiplerin metni. Satır sonunda bölünen sözcükler birleştirildi; Rumi takvimle yazılmış tarihler çevrildi."],
-        ["Sayma", "Her sözcük bütün çekimli biçimleriyle sayıldı (yıl, yılı, yıllarda…). Biçimler Vikisözlük'ten ve ünlü uyumuna göre üretilen çekim tablolarından geliyor. Başka bir sözcükle karışan biçimler (örneğin “örneğin”) elle çıkarıldı."],
-        ["S-eğrisi", "Dil değişimi çoğunlukla S biçiminde ilerler: yavaş başlar, hızlanır, yavaşlar. Her kavram için yeni sözcüğün payına bir S-eğrisi uyduruldu (en çok olabilirlik). Geçiş yılı, eğrinin %50'yi geçtiği yıl. Güven aralığı için oturumlar 300 kez yeniden örneklendi (bootstrap)."],
-        ["Köken ve belirgin sözcükler", "Kökenler Vikisözlük etimolojilerinden; Türkçe ekle türetilmiş bir sözcük kökünün kökenini alır (kitapçı → Arapça). Bir dönemin belirgin sözcükleri bilgilendirici önselli log-oranla seçildi (Monroe, Colaresi ve Quinn 2008)."],
-        ["Sınırlar", "1936–1939 tutanaklarının çoğu Türkçe harfler olmadan taranmış, bu yüzden şimdilik sayılamıyor; Dil Devrimi'nin en yoğun yılları eksik. Kavram listesi bilinen çiftlerden oluşuyor, bu da reformun başarısını olduğundan büyük gösterebilir. Sonraki adım: 1935 Cep Kılavuzu'ndan rastgele bir örneklem."],
+        ["Veri", `${nf.format(D.sittings)} oturum, ${millions} milyon sözcük`,
+         "TBMM tutanakları, 1920–2023: aynı türden metin, yüz yıl boyunca. Her dönemden eşit aralıklı ciltler ve birleşimler seçildi. Metin, TBMM'nin yayımladığı PDF'lerden çıkarıldı."],
+        ["Temizleme", "yalnızca konuşmalar sayıldı",
+         "İçindekiler, önceki tutanağın özeti, oturum kapandıktan sonraki ekler ve konuşmacı etiketleri (BAŞKAN —) sayılmadı: bunlar konuşma değil, kâtiplerin metni. Satır sonunda bölünen sözcükler birleştirildi; Rumi takvimle yazılmış tarihler çevrildi."],
+        ["Sayma", "her sözcük bütün çekimleriyle",
+         "Yıl, yılı, yıllarda… Biçimler Vikisözlük'ten ve ünlü uyumuna göre üretilen çekim tablolarından geliyor. Başka bir sözcükle karışan biçimler (örneğin “örneğin”) elle çıkarıldı."],
+        ["S-eğrisi", "geçiş yılı ve güven aralığı",
+         "Dil değişimi çoğunlukla S biçiminde ilerler: yavaş başlar, hızlanır, yavaşlar. Her kavram için yeni sözcüğün payına bir S-eğrisi uyduruldu (en çok olabilirlik). Geçiş yılı, eğrinin %50'yi geçtiği yıl. Güven aralığı için oturumlar 300 kez yeniden örneklendi (bootstrap)."],
+        ["Köken ve belirgin sözcükler", "Vikisözlük ve log-oran",
+         "Kökenler Vikisözlük etimolojilerinden; Türkçe ekle türetilmiş bir sözcük kökünün kökenini alır (kitapçı → Arapça). Bir dönemin belirgin sözcükleri bilgilendirici önselli log-oranla seçildi (Monroe, Colaresi ve Quinn 2008)."],
+        ["Metnin yaşı", `görmediği oturumlarda ${nf.format(t.err[whole])} yıl hata`,
+         `Her beş yılın sözcük sıklıklarıyla bir naif Bayes sınıflandırıcısı; yalnızca sözlükteki ${nf.format(DM.f.length)} sözcük biçimi, kişi adları değil. Her oturum, aynı ciltteki bütün oturumlar modelden çıkarılarak tahmin edildi. Okumadan, hep ortadaki yılı söyleyen tahmin ${nf.format(t.chance)} yıl yanılıyor.`],
+        ["Sınırlar", "1936–1939 eksik, kavram listesi seçilmiş",
+         "1936–1939 tutanaklarının çoğu Türkçe harfler olmadan taranmış, bu yüzden şimdilik sayılamıyor; Dil Devrimi'nin en yoğun yılları eksik. Kavram listesi bilinen çiftlerden oluşuyor, bu da reformun başarısını olduğundan büyük gösterebilir. Sonraki adım: 1935 Cep Kılavuzu'ndan rastgele bir örneklem."],
     ];
     const box = document.getElementById("method");
-    for(const [h, p] of items) {
-        const d = html("div", {}, box);
-        html("h3", {}, d, h);
+    for(const [h, gist, p] of items) {
+        const d = html("details", {}, box), sum = html("summary", {}, d), head = html("div", {}, sum);
+        html("h3", {}, head, h);
+        html("span", {class: "gist"}, head, gist);
         html("p", {}, d, p);
     }
     document.getElementById("footer").innerHTML =
         `Kaynaklar: TBMM tutanakları (www5.tbmm.gov.tr), Vikisözlük (kaikki.org üzerinden, CC BY-SA). Bütün sayılar projenin C ile yazılmış analiz aracından (<span class="num">evo web</span>) geliyor: ${nf.format(D.sittings)} oturum, ${nf.format(D.words)} sözcük.`;
+}
+
+// ---------------------------------------------------------------- motion
+
+// Plays each chart's entrance once, when it is first seen; with reduced motion, nothing moves.
+const STILL = reduceMotion || location.hash === "#durgun";
+function playOnce(el) {
+    el.classList.remove("done");
+    el.classList.add("play");
+    setTimeout(() => el.classList.replace("play", "done"), 2600);
+}
+// fn(element) once, when the element's top has come a little way up the screen. (A share of
+// the element would never be visible for a chart taller than the phone's screen.)
+function whenSeen(elements, fn, margin) {
+    const o = new IntersectionObserver(entries => entries.forEach(e => {
+        if(!e.isIntersecting) return;
+        o.unobserve(e.target);
+        fn(e.target);
+    }), {rootMargin: `0px 0px -${margin}% 0px`});
+    elements.forEach(el => o.observe(el));
+}
+function countUp(container) {
+    for(const el of container.querySelectorAll(".count")) {
+        const n = +el.dataset.n, start = performance.now();
+        const step = now => {
+            const t = Math.min(1, (now - start) / 1400);
+            el.textContent = Math.round(n * (1 - Math.pow(1 - t, 3)));
+            if(t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    }
+}
+function setupMotion() {
+    const sweeps = {concept: "sweep", heatmap: "sweep", origins: "sweep", survival: "sweep", words: "sweep",
+                    histogram: "sweep", "d-scatter": "sweep", timeline: "sweep-down"};
+    const charts = Object.entries(sweeps).map(([id, cls]) => {
+        const el = document.getElementById(id);
+        el.classList.add(cls);
+        if(STILL) el.classList.add("done");
+        return el;
+    });
+    if(STILL) return;
+    const rising = [...document.querySelectorAll(".chapter .head, .chapter .controls, .chapter .panel, .chapter .search, .decade")];
+    document.querySelectorAll(".decade").forEach((d, i) => d.style.setProperty("--i", i % 4));
+    rising.forEach(el => el.classList.add("reveal"));
+    whenSeen(rising, el => el.classList.add("in"), 6);
+    whenSeen(charts, playOnce, 22);
+    const stats = document.getElementById("stats");
+    stats.querySelectorAll(".count").forEach(el => { el.textContent = "0"; });
+    whenSeen([stats], countUp, 10);
+    // The time machine starts by itself the first time it is seen.
+    whenSeen([document.getElementById("race")], () => {
+        if(!TM.playing && TM.year === F) document.getElementById("tm-play").click();
+    }, 30);
+}
+
+// The reading progress line under the navigation.
+function setupProgress() {
+    const bar = document.getElementById("progress");
+    let pending = false;
+    addEventListener("scroll", () => {
+        if(pending) return;
+        pending = true;
+        requestAnimationFrame(() => {
+            const h = document.documentElement.scrollHeight - innerHeight;
+            bar.style.transform = `scaleX(${h > 0 ? scrollY / h : 0})`;
+            pending = false;
+        });
+    }, {passive: true});
+}
+
+// Light or dark, remembered in this browser.
+function setupTheme() {
+    const root = document.documentElement;
+    try { const t = localStorage.getItem("meclisin-dili-tema"); if(t) root.dataset.theme = t; } catch(e) { /* no storage */ }
+    document.getElementById("theme").addEventListener("click", () => {
+        const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+        root.dataset.theme = dark ? "light" : "dark";
+        try { localStorage.setItem("meclisin-dili-tema", root.dataset.theme); } catch(e) { /* no storage */ }
+    });
 }
 
 // ---------------------------------------------------------------- start
@@ -1421,8 +1886,11 @@ function drawAll() {
     drawOrigins();
     drawSurvival();
     drawSearch();
+    drawDatingTest();
+    dateText();
 }
 
+setupTheme();
 hero();
 writeIntros();
 setupTimeMachine();
@@ -1431,9 +1899,12 @@ setupConcept();
 drawDecades();
 setupRace();
 setupSearch();
+setupDating();
 writeMethod();
 drawAll();
 drawRace(1920);
+setupMotion();
+setupProgress();
 
 // Redraw when the width or the theme changes.
 let lastWidth = document.body.clientWidth, resizeTimer = 0;

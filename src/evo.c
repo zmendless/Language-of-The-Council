@@ -1,6 +1,7 @@
 // evo: the project's command-line tools. Run it without arguments for the list of commands.
 #include "analysis.h"
 #include "clean.h"
+#include "dating.h"
 #include "db.h"
 #include "query.h"
 #include "text.h"
@@ -22,6 +23,8 @@ static int usage(void) {
         "  evo eras    DB FROM TO FROM TO [N]    the N words most typical of each of two periods\n"
         "  evo stats   DB                        sittings, words and dictionary coverage per decade\n"
         "  evo unknown DB FROM TO [N]            the N most frequent words of years FROM-TO the lexicon lacks\n"
+        "  evo date    DB TEXT.txt               the 5 years a text most likely comes from, and the words that tell\n"
+        "  evo datetest DB                       how well evo date does on sittings it has not seen\n"
         "  evo clean   RAW.txt                   print one cleaned transcript, to check the cleaner\n"
         "  evo web     DB CONCEPTS.tsv RAW_DIR TEMPLATE.html OUT_DIR\n"
         "                                        the web page: every result as JSON in TEMPLATE, with example sentences\n");
@@ -836,6 +839,90 @@ static int cmdClean(char **argv) {
     return 0;
 }
 
+// ---------------------------------------------------------------- dating
+
+typedef struct {
+    int form, n;
+    double weight;
+} Clue;
+
+static int compareClues(const void *a, const void *b) {
+    double x = ((const Clue *)a)->weight, y = ((const Clue *)b)->weight;
+    return (x < y) - (x > y);
+}
+
+static int cmdDate(char **argv) {
+    sqlite3 *db = dbOpen(argv[0]);
+    char *text = readFile(argv[1]);
+    if(!text) {
+        perror(argv[1]);
+        return 1;
+    }
+    DatingModel m;
+    loadDatingModel(db, &m);
+    FormUse *uses;
+    int count = textUses(&m, text, &uses);
+    double logLik[DATE_BINS];
+    int best = dateUses(&m, uses, count, logLik);
+    if(best < 0) {
+        printf("no words the model knows\n");
+        return 1;
+    }
+    // How much more likely each period is than the best one, as a ratio (1 = as likely).
+    printf("most likely %d-%d\n\n", DATE_FIRST + DATE_STEP * best, DATE_FIRST + DATE_STEP * best + DATE_STEP - 1);
+    for(int b = 0; b < DATE_BINS; b++) {
+        if(isinf(logLik[b])) continue;
+        double diff = logLik[b] - logLik[best];
+        int bar = diff > -20 ? (int)(40 + 2 * diff) : 0;
+        printf("%d-%d  %7.1f  %.*s\n", DATE_FIRST + DATE_STEP * b, DATE_FIRST + DATE_STEP * b + DATE_STEP - 1, diff,
+               bar, "########################################");
+    }
+    // The words that pull towards the guessed period most: how much likelier there than on average.
+    Clue *clues = malloc((count + 1) * sizeof *clues);
+    int nClues = 0;
+    for(int i = 0; i < count; i++) {
+        if(uses[i].form < 0) continue;
+        double year, spread;
+        formYear(&m, uses[i].form, &year, &spread);
+        double here = (double)m.forms[uses[i].form].n[best] / m.tokens[best];
+        double overall = (double)m.forms[uses[i].form].total / m.total;
+        clues[nClues++] = (Clue){uses[i].form, uses[i].n, uses[i].n * log((here + 1e-7) / (overall + 1e-7))};
+    }
+    qsort(clues, nClues, sizeof *clues, compareClues);
+    printf("\nwords typical of %d-%d (typical year):\n", DATE_FIRST + DATE_STEP * best, DATE_FIRST + DATE_STEP * best + DATE_STEP - 1);
+    for(int i = 0; i < nClues && i < 15 && clues[i].weight > 0; i++) {
+        double year, spread;
+        formYear(&m, clues[i].form, &year, &spread);
+        printf("  %-20s %.0f\n", m.forms[clues[i].form].form, year);
+    }
+    free(clues);
+    free(uses);
+    free(text);
+    freeDatingModel(&m);
+    sqlite3_close(db);
+    return 0;
+}
+
+static int cmdDateTest(char **argv) {
+    sqlite3 *db = dbOpen(argv[0]);
+    DatingModel m;
+    loadDatingModel(db, &m);
+    DatingTest t;
+    testDating(db, &m, 7, &t);
+    printf("%d sittings, each dated with its volume left out of the model\n\n", t.nSittings);
+    printf("words      tested  mean error  within 5 years\n");
+    for(int l = 0; l < DATE_LENGTHS; l++) {
+        if(t.lengths[l]) printf("%-10d", t.lengths[l]);
+        else printf("%-10s", "all");
+        printf(" %6d  %7.1f y  %9.0f%%\n", t.tested[l], t.meanError[l], 100 * t.within5[l]);
+    }
+    printf("\nwithout reading (always the median year): %.1f years off on average\n", t.chanceError);
+    freeDatingTest(&t);
+    freeDatingModel(&m);
+    sqlite3_close(db);
+    return 0;
+}
+
 // ---------------------------------------------------------------- web
 
 // JSON output: strings escaped, NAN written as null.
@@ -1026,6 +1113,47 @@ static void jsonExamples(FILE *f, ExamplePool *pool) {
     }
 }
 
+static void jsonDating(FILE *f, const DatingModel *m, const DatingTest *t) {
+    fprintf(f, ",\"dating\":{\"first\":%d,\"step\":%d,\"prior\":%g,\"minTokens\":%d,\"tok\":[",
+            DATE_FIRST, DATE_STEP, DATE_PRIOR, DATE_MIN_TOKENS);
+    for(int b = 0; b < DATE_BINS; b++) fprintf(f, "%s%ld", b ? "," : "", m->tokens[b]);
+    fputs("],\"f\":[", f);
+    for(int i = 0; i < m->count; i++) {
+        if(i) fputc(',', f);
+        jsonString(f, m->forms[i].form);
+    }
+    // Counts per period, trailing zeros left out.
+    fputs("],\"c\":[", f);
+    for(int i = 0; i < m->count; i++) {
+        int last = DATE_BINS - 1;
+        while(last > 0 && !m->forms[i].n[last]) last--;
+        fputs(i ? ",[" : "[", f);
+        for(int b = 0; b <= last; b++) fprintf(f, "%s%ld", b ? "," : "", m->forms[i].n[b]);
+        fputc(']', f);
+    }
+    fputs("],\"test\":{\"len\":[", f);
+    for(int l = 0; l < DATE_LENGTHS; l++) fprintf(f, "%s%d", l ? "," : "", t->lengths[l]);
+    fputs("],\"n\":[", f);
+    for(int l = 0; l < DATE_LENGTHS; l++) fprintf(f, "%s%d", l ? "," : "", t->tested[l]);
+    fputs("],\"err\":[", f);
+    for(int l = 0; l < DATE_LENGTHS; l++) {
+        if(l) fputc(',', f);
+        jsonNumber(f, t->meanError[l], 1);
+    }
+    fputs("],\"w5\":[", f);
+    for(int l = 0; l < DATE_LENGTHS; l++) {
+        if(l) fputc(',', f);
+        jsonNumber(f, t->within5[l], 3);
+    }
+    fputs("],\"chance\":", f);
+    jsonNumber(f, t->chanceError, 1);
+    fputs(",\"year\":[", f);
+    for(int i = 0; i < t->nSittings; i++) fprintf(f, "%s%d", i ? "," : "", t->year[i]);
+    fputs("],\"guess\":[", f);
+    for(int i = 0; i < t->nSittings; i++) fprintf(f, "%s%d", i ? "," : "", t->guess[i]);
+    fputs("]}}", f);
+}
+
 // Everything the web page shows, as one JSON object.
 static void writeWebData(FILE *f, sqlite3 *db, const Study *s, ExamplePool *pools) {
     fprintf(f, "{\"first\":%d,\"last\":%d,\"sittings\":%d,\"words\":%ld,", WEB_FIRST, WEB_LAST, s->sittings, s->words);
@@ -1168,7 +1296,9 @@ static void writeWebData(FILE *f, sqlite3 *db, const Study *s, ExamplePool *pool
         if(i) fputc(',', f);
         jsonString(f, s->vocab.words[sv->kept[i]].word);
     }
-    fputs("]}}", f);
+    fputs("]}", f);
+    jsonDating(f, &s->dating, &s->datingTest);
+    fputc('}', f);
 }
 
 // Writes the page twice: index.html to open from disk (with its own <head>), and
@@ -1235,6 +1365,8 @@ int main(int argc, char **argv) {
     if(strcmp(cmd, "eras") == 0 && argc >= 7 && argc <= 8) return cmdEras(argc - 2, argv + 2);
     if(strcmp(cmd, "stats") == 0 && argc == 3) return cmdStats(argv + 2);
     if(strcmp(cmd, "unknown") == 0 && argc >= 5 && argc <= 6) return cmdUnknown(argc - 2, argv + 2);
+    if(strcmp(cmd, "date") == 0 && argc == 4) return cmdDate(argv + 2);
+    if(strcmp(cmd, "datetest") == 0 && argc == 3) return cmdDateTest(argv + 2);
     if(strcmp(cmd, "clean") == 0 && argc == 3) return cmdClean(argv + 2);
     if(strcmp(cmd, "web") == 0 && argc == 7) return cmdWeb(argv + 2);
     return usage();

@@ -19,6 +19,7 @@ typedef enum {
     VIEW_DECADES,        // the words most typical of each decade
     VIEW_SURVIVAL,       // how many of the 1920s' most used words are still in use, by origin
     VIEW_RANKING,        // animated: the most used nouns and adjectives of each year
+    VIEW_DATING,         // how well the program dates a text it has not seen
     VIEW_COUNT
 } View;
 

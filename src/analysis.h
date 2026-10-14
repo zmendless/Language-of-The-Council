@@ -1,6 +1,7 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
+#include "dating.h"
 #include "query.h"
 
 #include <math.h>
@@ -138,6 +139,8 @@ typedef struct {
     EraWord decades[DECADES][12];    // periodWords of each decade
     int nDecade[DECADES];
     Survival survival;
+    DatingModel dating;              // guessing a text's years from its words
+    DatingTest datingTest;           // how well it does on sittings it has not seen
     int sittings;
     long words;
 } Study;

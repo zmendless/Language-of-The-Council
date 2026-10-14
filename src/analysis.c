@@ -749,6 +749,8 @@ Study *loadStudy(sqlite3 *db, const char *conceptsPath, int bootstrapRounds) {
         s->nDecade[d] = periodWords(&s->vocab, 1920 + 10 * d, 1929 + 10 * d, 12, s->decades[d]);
     }
     survivalOf(&s->vocab, &s->tokens, 1920, 300, &s->survival);
+    loadDatingModel(db, &s->dating);
+    testDating(db, &s->dating, 7, &s->datingTest);
     return s;
 }
 
@@ -756,6 +758,8 @@ void freeStudy(Study *s) {
     if(!s) return;
     for(int i = 0; i < s->nConcepts; i++) free(s->concepts[i].uses.sittings);
     freeVocabulary(&s->vocab);
+    freeDatingModel(&s->dating);
+    freeDatingTest(&s->datingTest);
     free(s->rates);
     free(s->concepts);
     free(s);

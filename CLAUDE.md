@@ -17,10 +17,10 @@ make test            # all unit tests (one binary, tests/test_main.c, ASan+UBSan
 make pilot           # fetch data/pilot_urls.txt, load the lexicon, ingest, write out/shares.csv
 make figures         # out/fits.tsv, out/origins.csv and every chart as a 1920x1080 PNG in out/figures
 make video           # out/zaman-makinesi.mp4 and out/en-cok-kullanilanlar.mp4 (ffmpeg)
-./evo                # lists the subcommands: ingest, lexicon, share, fit, origins, eras, kwic, stats, unknown, clean
+./evo                # lists the subcommands: ingest, lexicon, share, fit, origins, eras, date, datetest, kwic, stats, unknown, clean
 ./viewer             # interactive (F full screen, P save PNG, Space play, E exhibition mode)
 ./viewer --shot NAME out.png   # one chart off screen: takvim, parmakizi, yarislar, koken, omur, sozcukler,
-                               # onyillar, zaman:1950, siralama:1950, a concept, or words ("efendi,sayın")
+                               # onyillar, tarih, zaman:1950, siralama:1950, a concept, or words ("efendi,sayın")
 ./viewer --video NAME DIR      # frames of an animated view (zaman or siralama)
 ./viewer --show-shot STEP out.png  # one exhibition slide with its caption (-1: the title slide)
 ./viewer --dark ...            # any of the above in the dark theme (T in the window)
@@ -35,7 +35,7 @@ The user's own projects build with `clang … $(pkg-config --cflags --libs rayli
 
 ## Architecture
 
-The two programs share `src/text.c`, `clean.c`, `inflect.c`, `db.c`, `query.c` and `analysis.c`:
+The two programs share `src/text.c`, `clean.c`, `inflect.c`, `db.c`, `query.c`, `analysis.c` and `dating.c`:
 - `evo` (`src/evo.c`) is the command-line data and analysis tool.
 - `viewer` (`src/viewer.c`) is the UI shell. It adds `src/charts.c` (all drawing, raylib) and raygui.
 
@@ -52,7 +52,8 @@ Data flow:
    - fits an S-curve per concept (`fitLogistic`: Nelder–Mead on the binomial likelihood, then `bootstrapFit` resampling sittings within each year);
    - builds `form_origin` and the origin shares per year;
    - picks the characteristic words of two eras (`eraWords`: log-odds with a Dirichlet prior);
-   - loads every noun and adjective used 30+ times with its uses per year (`loadVocabulary`), for the per-year rates (`smoothRate`), the words of each decade (`periodWords`) and the survival of the 1920s words (`survivalOf`).
+   - loads every noun and adjective used 30+ times with its uses per year (`loadVocabulary`), for the per-year rates (`smoothRate`), the words of each decade (`periodWords`) and the survival of the 1920s words (`survivalOf`);
+   - builds the dating model and tests it (`src/dating.c`: naive Bayes over 5-year periods, the 20,000 most used lexicon forms; `testDating` holds out each sitting's whole volume with `holdOutVolume`).
 
 Invariants that span files:
 - **Folding.** Every word is compared in folded form (`trFold`: Turkish I/ı and İ/i, circumflex dropped). This applies to corpus forms, lexicon forms and lemmas, and `data/concepts.tsv` words. If you change folding or tokenizing, re-run both `evo lexicon` and `evo ingest`.
@@ -70,7 +71,7 @@ Invariants that span files:
 - **The time machine** animates the observed shares (`observedShare`, a widening window), not the S-curve, so that reversals such as vekil in the 1950s show.
 - **New OCR quirks.** When you handle a new one, add the real line to `tests/test_main.c`. Dates, cleaning, inflection, fitting and etymology rules are covered there.
 
-The website is `web/template.html`, plain JS with no libraries. `evo web` replaces its `__DATA__` with one JSON object (`writeWebData` in `src/evo.c`) and writes `out/web/index.html` (standalone) and `out/web/artifact.html` (no `<head>`, for hosts that add one). The page re-implements `observedAt`, `smoothRate`, `originShares` and the ranking in JS: change them in both places. Its word search uses `vocab.s` (all lexicon forms, as the viewer's search counts); the ranking and origins use `vocab.n` (noun/adjective forms from `form_origin`), as in the viewer. Check page changes with headless Firefox (`firefox --headless --no-remote --profile DIR --screenshot out.png --window-size=1280,9000 file://…`); there is no Node.
+The website is `web/template.html`, plain JS with no libraries. `evo web` replaces its `__DATA__` with one JSON object (`writeWebData` in `src/evo.c`) and writes `out/web/index.html` (standalone) and `out/web/artifact.html` (no `<head>`, for hosts that add one). The page re-implements `observedAt`, `smoothRate`, `originShares`, the ranking, the tokenizer (`tokNext` → `tokenize`) and the dating model (`formChance`, `dateUses`, `formYear`) in JS: change them in both places. Chapter titles are filled in by `writeIntros` from the data, with Turkish number suffixes from `numberSuffix`. Charts listed in `setupMotion` sweep in once when first seen; open the page with `#durgun` for screenshots, or the charts below the fold stay hidden. Its word search uses `vocab.s` (all lexicon forms, as the viewer's search counts); the ranking and origins use `vocab.n` (noun/adjective forms from `form_origin`), as in the viewer. Check page changes with headless Firefox (`firefox --headless --no-remote --profile DIR --screenshot out.png --window-size=1280,9000 "file://…#durgun"`); there is no Node.
 
 `charts.c` draws everything for a 1600×900 design scaled by `S`. Each view is a `draw*` function taking a `ChartState`. `saveView` renders off screen and flips the image (render textures are upside down). The reform dates drawn on every chart are `EVENTS` in `charts.c` (and the same list in `web/template.html`). Neutral colours (`PAPER`, `INK`, …) change with `setChartTheme`; data colours do not. Exported PNGs go through `makeOpaque`, because blending also lowers the alpha channel of a render texture. The animated views (`viewIsAnimated`) are drawn from `ChartState.year` alone, with no state between frames, so the video frames and the window show the same thing.
 

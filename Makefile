@@ -13,7 +13,7 @@ CFLAGS = -std=gnu11 -O2 -Wall -Wextra
 SQLITE_DEFS = -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DEFAULT_MEMSTATUS=0
 RAYLIB = $(shell pkg-config --cflags --libs raylib) -lm -lX11 -lGL -lpthread -ldl
 
-CORE = src/text.c src/clean.c src/inflect.c src/db.c src/query.c src/analysis.c
+CORE = src/text.c src/clean.c src/inflect.c src/db.c src/query.c src/analysis.c src/dating.c
 HEADERS = $(wildcard src/*.h)
 DB = db/corpus.sqlite
 

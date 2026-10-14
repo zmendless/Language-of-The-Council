@@ -1473,11 +1473,81 @@ static void drawRanking(const ChartState *st, Rectangle area) {
 
 // ---------------------------------------------------------------- dispatch
 
+// ---------------------------------------------------------------- dating a text
+
+static void drawDating(const ChartState *st, Rectangle area) {
+    const Study *s = st->study;
+    const DatingTest *t = &s->datingTest;
+    float y = header(area, "Metnin yaşı",
+                     "Program bir metnin yalnızca sözcüklerine bakıp hangi beş yılda söylendiğini tahmin ediyor. Hiç görmediği oturumlarda denendi.");
+    int whole = DATE_LENGTHS - 1;
+
+    // The headline: the error on whole sittings against guessing without reading.
+    float x = area.x + 42 * S;
+    char big[32], line[300];
+    snprintf(big, sizeof big, "%s yıl", decimalComma(t->meanError[whole], 1));
+    text(big, x, y - 2 * S, 54, PROPOSAL, true);
+    x += textWidth(big, 54, true) + 14 * S;
+    text("ortalama hata, bütün bir oturumda", x, y + 8 * S, 17, INK, true);
+    snprintf(line, sizeof line, "hiç okumadan hep ortadaki yılı söyleseydi: %s yıl", decimalComma(t->chanceError, 1));
+    text(line, x, y + 32 * S, 17, MUTED, false);
+
+    // Error by text length, as bars.
+    float left = area.x + 42 * S, top = y + 120 * S, barX = left + 190 * S, barW = area.width * 0.45f - 240 * S;
+    text("Metin ne kadar uzun olmalı?", left, top, 22, INK, true);
+    float maxErr = niceMax(t->chanceError);
+    float rowH = 62 * S, ry = top + 50 * S;
+    for(int l = 0; l <= DATE_LENGTHS; l++, ry += rowH) {
+        bool chance = l == DATE_LENGTHS;
+        double err = chance ? t->chanceError : t->meanError[l];
+        if(chance) snprintf(line, sizeof line, "okumadan");
+        else if(t->lengths[l]) snprintf(line, sizeof line, "%d sözcük", t->lengths[l]);
+        else snprintf(line, sizeof line, "bütün oturum");
+        textRight(line, barX - 14 * S, ry + 10 * S, 18, chance ? MUTED : INK, !chance);
+        float w = (float)(err / maxErr) * barW;
+        DrawRectangleRounded((Rectangle){barX, ry + 4 * S, fmaxf(4 * S, w), rowH - 22 * S}, 0.25f, 6, chance ? FAINT : PROPOSAL);
+        snprintf(line, sizeof line, "%s yıl", decimalComma(err, 1));
+        text(line, barX + w + 10 * S, ry + 9 * S, 18, INK, true);
+        if(!chance) {
+            snprintf(line, sizeof line, "%%%.0f'i 5 yıldan az hatalı", 100 * t->within5[l]);
+            text(line, barX + w + 100 * S, ry + 11 * S, 15, MUTED, false);
+        }
+    }
+    text("20 sözcük: kabaca bir cümle. Bir oturum: binlerce sözcük.", left, ry + 6 * S, 15, MUTED, false);
+
+    // Every sitting: its true year against the guess.
+    float side = fminf(area.height - (y - area.y) - 150 * S, area.width * 0.42f);
+    Rectangle plot = {area.x + area.width - 60 * S - side, y + 40 * S, side, side};
+    Axes a = {plot, 1918, 2026, 1};
+    float span = YEAR_MAX - YEAR_MIN;
+    for(int yr = 1920; yr <= 2020; yr += 20) {
+        float px = ax(&a, yr), py = plot.y + plot.height * (1 - (yr - YEAR_MIN) / span);
+        DrawLineEx((Vector2){px, plot.y}, (Vector2){px, plot.y + plot.height}, 1, GRID);
+        DrawLineEx((Vector2){plot.x, py}, (Vector2){plot.x + plot.width, py}, 1, GRID);
+        snprintf(line, sizeof line, "%d", yr);
+        textCentre(line, px, plot.y + plot.height + 10 * S, 14, MUTED, false);
+        textRight(line, plot.x - 10 * S, py - 8 * S, 14, MUTED, false);
+    }
+    DrawLineDashed((Vector2){plot.x, plot.y + plot.height}, (Vector2){plot.x + plot.width, plot.y}, (int)(6 * S) + 1, (int)(5 * S) + 1, FAINT);
+    for(int i = 0; i < t->nSittings; i++) {
+        float jitter = (i % 5 - 2) * 0.5f;   // guesses fall on period middles: spread them a little
+        float px = ax(&a, t->year[i]), py = plot.y + plot.height * (1 - (t->guess[i] + jitter - YEAR_MIN) / span);
+        DrawCircleV((Vector2){px, py}, 4 * S, Fade(PROPOSAL, 0.6f));
+    }
+    text("Her nokta bir oturum", plot.x, plot.y - 34 * S, 17, INK, true);
+    textCentre("gerçek yıl", plot.x + plot.width / 2, plot.y + plot.height + 34 * S, 15, MUTED, false);
+    text("tahmin", plot.x - 56 * S, plot.y - 34 * S + 22 * S, 15, MUTED, false);
+    text("çizgi: doğru tahmin", plot.x + plot.width - textWidth("çizgi: doğru tahmin", 15, false), plot.y - 30 * S, 15, FAINT, false);
+    snprintf(line, sizeof line, "Naif Bayes: her beş yılın sözcük sıklıkları. Yalnızca sözlükteki %s sözcük biçimi, kişi adları değil. "
+             "Her oturum, cildi modelden çıkarılarak tahmin edildi.", thousands(s->dating.count));
+    footer(area, s, line);
+}
+
 const char *viewName(View v) {
     static const char *NAMES[] = {"Kavram", "Değişim takvimi", "Sözcük yarışları", "Söz varlığının kökeni",
                                   "Kaybolan ve doğan sözcükler", "Zaman makinesi", "Sözcük ara",
                                   "Yüz yılın parmak izi", "On yılların sözcükleri", "Sözcüklerin ömrü",
-                                  "En çok kullanılanlar"};
+                                  "En çok kullanılanlar", "Metnin yaşı"};
     return v < VIEW_COUNT ? NAMES[v] : "?";
 }
 
@@ -1504,6 +1574,7 @@ void drawView(View v, const ChartState *st, Rectangle area) {
         case VIEW_DECADES: drawDecades(st, area); break;
         case VIEW_SURVIVAL: drawSurvival(st, area); break;
         case VIEW_RANKING: drawRanking(st, area); break;
+        case VIEW_DATING: drawDating(st, area); break;
         default: break;
     }
 }

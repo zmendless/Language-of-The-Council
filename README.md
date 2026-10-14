@@ -54,6 +54,7 @@ make figures   # then every chart
 | Vocabulary origin | `./evo origins db/corpus.sqlite out/origins.csv` | Arabic / Persian / Turkish / Western share per year |
 | Two eras compared | `./evo eras db/corpus.sqlite 1920 1934 2003 2023` | the words most typical of each era |
 | Charts | `./viewer`, `./viewer --shot takvim out.png`, `make figures` | PNG figures for the report |
+| Date a text | `./evo date db/corpus.sqlite text.txt`, `./evo datetest db/corpus.sqlite` | the five years a text most likely comes from; how accurate that is |
 | Website | `make web` (`./evo web …`) | `out/web/index.html`: every result and example sentences in one page |
 
 What `ingest` removes before counting, and why:
@@ -78,6 +79,10 @@ It also rejoins hyphenated words, reads the date (including the Ottoman calendar
 - **Vocabulary origin.** Each noun and adjective in the corpus gets the origin Wiktionary gives it.
   - A word built with a Turkish suffix takes its root's origin, so *kitapçı* counts as Arabic.
   - Function words (*ve, ama, her*) are left out: many are Arabic or Persian, but they were never replaced.
+- **The age of a text.** Every five years has its own word frequencies (*sene* in 1925, *yıl* in 2015). `evo date` guesses when a text was spoken from its words alone: a naive Bayes classifier that adds up, word by word, how much likelier the word is in one period than in another. It uses only the 20,000 most used dictionary word forms, not names, so it reads the language and not the ministers of the day.
+  - **The test** (`evo datetest`): every sitting is dated with its whole volume taken out of the model, since sittings of one volume are days apart and share their topics.
+  - **Results on the small sample:** off by 4.3 years on average for a whole sitting, 4.9 for 200 words and 10.4 for 20 words (one sentence). Always guessing the middle year would be off by 24.1.
+  - **It can be fooled.** It puts Atatürk's *Gençliğe Hitabe* (1927) in the 1970s, because its words (*Türk*, *gençliği*, *istiklalini*) were common in the speeches of that decade. The opening of *Nutuk* (1927) lands in 1935–39.
 - **Two eras compared.** `evo eras` ranks words by how typical they are of each era: a log-odds ratio with an informative Dirichlet prior (Monroe, Colaresi & Quinn 2008), so that rare words do not top the list by chance.
 
 ## The charts
@@ -94,6 +99,7 @@ It also rejoins hyphenated words, reads the date (including the Ottoman calendar
 | Sözcüklerin ömrü (`omur`) | Of the 300 most used nouns and adjectives of the 1920s, how many are still in use in each later decade, Arabic against Turkish; with the words that vanished and the Arabic and Persian ones that held on, each with its own curve |
 | On yılların sözcükleri (`onyillar`) | The words most typical of each decade against all the others. History shows through: agriculture in the 1960s, martial law in the 1970s, terror in the 2010s |
 | En çok kullanılanlar (`siralama:1950`) | Animated: the 12 most used nouns and adjectives of each year as racing bars, coloured by origin. `make video` |
+| Metnin yaşı (`tarih`) | How well a text's years are guessed from its words: error by text length against guessing without reading, and every sitting's true year against its guess |
 | Sözcük ara (any words, comma separated) | Frequency per million words. Several words are compared on one chart, e.g. `efendi, muhterem, sayın, değerli` (how MPs addressed each other) |
 
 The time machine shows the observed shares (smoothed over a few years), not the S-curves, so reversals stay visible.
@@ -107,6 +113,12 @@ The time machine shows the observed shares (smoothed over a few years), not the 
 - `web/template.html` is the page: HTML, CSS and plain JavaScript, no libraries.
 - `./evo web DB CONCEPTS RAW_DIR web/template.html out/web` puts the numbers into it as JSON (`out/web/data.json` too).
 - The page computes the same smoothed shares and rates as the viewer (`observedAt`, `smoothRate`, the ranking), so the two agree.
+- Each chapter's title states its finding, with the numbers filled in from the data ("Arapça ve Farsça sözcüklerin payı %73'ten %34'e indi").
+- **Metnin yaşı:** paste any text and the page guesses its years, with the telling words coloured by era (red old, blue new).
+- **Motion:**
+  - charts over time sweep in from left to right the first time they are seen, and the time machine starts by itself;
+  - with the system's "reduce motion" setting, or with `#durgun` at the end of the address, nothing moves.
+- **A light/dark switch** in the navigation bar.
 
 ![races](docs/yarislar.png)
 

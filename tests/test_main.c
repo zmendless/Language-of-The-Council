@@ -358,6 +358,46 @@ static void testVocabulary(void) {
     freeVocabulary(&v);
 }
 
+// A model of two words by hand: sene belongs to the 1920s, yıl to the 2010s, ve to both.
+static void testDatingModel(void) {
+    CHECK(dateBin(1919) == -1 && dateBin(1920) == 0 && dateBin(1924) == 0 && dateBin(1925) == 1);
+    CHECK(dateBinMiddle(0) == 1922 && dateBinMiddle(18) == 2012);
+    static DateForm forms[3];
+    memset(forms, 0, sizeof forms);
+    DatingModel m = {forms, 3, {0}, 0};
+    snprintf(forms[0].form, MAX_WORD, "sene");   // sorted, as loadDatingModel leaves them
+    snprintf(forms[1].form, MAX_WORD, "ve");
+    snprintf(forms[2].form, MAX_WORD, "yıl");
+    int early = dateBin(1922), late = dateBin(2012);
+    forms[0].n[early] = 900; forms[0].n[late] = 10;
+    forms[1].n[early] = 30000; forms[1].n[late] = 30000;
+    forms[2].n[early] = 5; forms[2].n[late] = 800;
+    for(int f = 0; f < 3; f++) {
+        for(int b = 0; b < DATE_BINS; b++) {
+            forms[f].total += forms[f].n[b];
+            m.tokens[b] += forms[f].n[b];
+            m.total += forms[f].n[b];
+        }
+    }
+    CHECK(dateFormIndex(&m, "yıl") == 2 && dateFormIndex(&m, "sözcük") == -1);
+
+    double logLik[DATE_BINS];
+    FormUse *uses;
+    int n = textUses(&m, "Bu sene ve geçen sene", &uses);
+    CHECK(dateUses(&m, uses, n, logLik) == early);
+    CHECK(isinf(logLik[dateBin(1950)]));   // no words that period: never guessed
+    free(uses);
+    n = textUses(&m, "Bu yıl ve geçen yıl", &uses);
+    CHECK(dateUses(&m, uses, n, logLik) == late);
+    free(uses);
+
+    double year, spread;
+    formYear(&m, 0, &year, &spread);
+    CHECK(year < 1930);
+    formYear(&m, 1, &year, &spread);
+    CHECK(fabs(year - 1967) < 1 && spread > 40);   // used alike in both: tells nothing
+}
+
 int main(void) {
     testFold();
     testTokens();
@@ -367,6 +407,7 @@ int main(void) {
     testInflect();
     testAnalysis();
     testVocabulary();
+    testDatingModel();
     printf("%d checks, %d failed\n", checks, failures);
     return failures ? 1 : 0;
 }
