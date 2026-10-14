@@ -20,6 +20,7 @@ typedef enum {
     VIEW_SURVIVAL,       // how many of the 1920s' most used words are still in use, by origin
     VIEW_RANKING,        // animated: the most used nouns and adjectives of each year
     VIEW_DATING,         // how well the program dates a text it has not seen
+    VIEW_REVERSALS,      // the meanings whose new word stepped back after 1952
     VIEW_COUNT
 } View;
 
@@ -60,9 +61,7 @@ bool saveView(View v, const ChartState *st, int width, int height, const char *p
 // The views that play over the years (VIEW_TIME_MACHINE, VIEW_RANKING).
 bool viewIsAnimated(View v);
 
-// The share of today's word around a year, from the counts (a window widened until it
-// holds enough uses), and the origin shares (ORIGIN_COUNT values) around a year.
-float observedShare(const ConceptStudy *c, float year);
+// The origin shares (ORIGIN_COUNT values) around a year.
 bool originShares(const Study *s, float year, float *share);
 
 // 5.55 → "5,55" (a static buffer, four calls deep).

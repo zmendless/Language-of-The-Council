@@ -984,27 +984,6 @@ static void drawEras(const ChartState *st, Rectangle area) {
 
 // ---------------------------------------------------------------- time machine
 
-// The share of today's word around a year, from the counts themselves: a window that
-// widens until it holds enough uses. Unlike the S-curve, it shows reversals (vekil came
-// back in the 1950s). Where there are no data it falls back to the S-curve.
-static float observedAt(const ConceptStudy *c, int year) {
-    for(int half = 3; half <= 10; half++) {
-        long k = 0, n = 0;
-        for(int y = year - half; y <= year + half; y++) {
-            if(y < FIRST_YEAR || y > LAST_YEAR) continue;
-            k += c->uses.newUses[y - FIRST_YEAR];
-            n += c->uses.allUses[y - FIRST_YEAR];
-        }
-        if(n >= 20) return (float)k / n;
-    }
-    return fitShare(&c->fit, year);
-}
-
-float observedShare(const ConceptStudy *c, float year) {
-    int y0 = (int)floorf(year);
-    float t = year - y0;
-    return observedAt(c, y0) * (1 - t) + observedAt(c, y0 + 1) * t;
-}
 
 // The year, big, and what happened around it; returns the x where text can go beside it.
 static float yearBanner(Rectangle area, float year) {
@@ -1543,11 +1522,110 @@ static void drawDating(const ChartState *st, Rectangle area) {
     footer(area, s, line);
 }
 
+// ---------------------------------------------------------------- reversals
+
+// The concepts whose new word stepped back after 1952, the largest drop first.
+static int reversalsByDrop(const Study *s, int *order) {
+    int n = 0;
+    for(int i = 0; i < s->nConcepts; i++) {
+        if(!s->concepts[i].reversal.found) continue;
+        const Reversal *r = &s->concepts[i].reversal;
+        int j = n++;
+        for(; j > 0; j--) {   // insertion by the size of the drop
+            const Reversal *p = &s->concepts[order[j - 1]].reversal;
+            if(p->before - p->after >= r->before - r->after) break;
+            order[j] = order[j - 1];
+        }
+        order[j] = i;
+    }
+    return n;
+}
+
+static void drawReversals(const ChartState *st, Rectangle area) {
+    const Study *s = st->study;
+    int order[256];
+    int n = reversalsByDrop(s, order);
+    float y = header(area, "Geri dönüşler",
+                     "1952'de anayasa eski diline döndürüldü. Yeni sözcükler meclisten de çekildi: 1952'den önceki en yüksek payları ve sonraki en düşük payları.");
+    char line[200];
+    snprintf(line, sizeof line, "%d / %d", n, s->nConcepts);
+    float x = area.x + 42 * S;
+    text(line, x, y - 2 * S, 54, OLD, true);
+    x += textWidth(line, 54, true) + 14 * S;
+    snprintf(line, sizeof line, "kavramda yeni sözcük en az %.0f puan geri çekildi", 100 * REVERSAL_MIN_DROP);
+    text(line, x, y + 8 * S, 17, INK, true);
+    text("ve çoğu ancak 1960'larda eski yerine döndü", x, y + 32 * S, 17, MUTED, false);
+
+    // Left: one row per concept, from its share before (blue) to its share after (red).
+    float listTop = y + 92 * S, rowH = 25 * S, labelW = 250 * S;
+    float plotL = area.x + 42 * S + labelW, plotR = area.x + area.width * 0.52f;
+    int rows = (int)((area.y + area.height - 70 * S - listTop - 30 * S) / rowH);
+    if(rows > n) rows = n;
+    for(int k = 0; k <= 4; k++) {
+        float gx = plotL + (plotR - plotL) * k / 4;
+        DrawLineEx((Vector2){gx, listTop - 6 * S}, (Vector2){gx, listTop + rows * rowH}, 1, GRID);
+        snprintf(line, sizeof line, "%%%d", k * 25);
+        textCentre(line, gx, listTop + rows * rowH + 6 * S, 14, MUTED, false);
+    }
+    for(int k = 0; k < rows; k++) {
+        const ConceptStudy *c = &s->concepts[order[k]];
+        const Reversal *r = &c->reversal;
+        float cy = listTop + k * rowH + rowH / 2;
+        textRight(c->label, plotL - 14 * S, cy - 9 * S, 15, INK, false);
+        float xb = plotL + (plotR - plotL) * r->before, xa = plotL + (plotR - plotL) * r->after;
+        DrawLineEx((Vector2){xa + 9 * S, cy}, (Vector2){xb, cy}, 3 * S, Fade(MUTED, 0.5f));
+        fillTriangle((Vector2){xa + 5 * S, cy}, (Vector2){xa + 13 * S, cy - 5 * S}, (Vector2){xa + 13 * S, cy + 5 * S}, Fade(MUTED, 0.8f));
+        DrawCircleV((Vector2){xb, cy}, 6 * S, NEW);
+        DrawCircleV((Vector2){xa, cy}, 6 * S, OLD);
+        if(r->backYear) snprintf(line, sizeof line, "%d", r->backYear);
+        else snprintf(line, sizeof line, "dönmedi");
+        text(line, plotR + 16 * S, cy - 8 * S, 14, FAINT, false);
+    }
+    text("geri döndüğü", plotR + 16 * S, listTop - 48 * S, 14, MUTED, true);
+    text("yıl", plotR + 16 * S, listTop - 30 * S, 14, MUTED, true);
+    if(rows < n) {
+        snprintf(line, sizeof line, "ve %d kavram daha", n - rows);
+        text(line, plotL, listTop + rows * rowH + 30 * S, 14, FAINT, false);
+    }
+    // Legend over the list.
+    DrawCircleV((Vector2){plotL + 6 * S, listTop - 22 * S}, 6 * S, NEW);
+    text("1952'den önce en yüksek", plotL + 18 * S, listTop - 31 * S, 14, MUTED, false);
+    float lx = plotL + 40 * S + textWidth("1952'den önce en yüksek", 14, false);
+    DrawCircleV((Vector2){lx, listTop - 22 * S}, 6 * S, OLD);
+    text("sonra en düşük", lx + 12 * S, listTop - 31 * S, 14, MUTED, false);
+
+    // Right: the six largest as curves, 1940-1975, with the 1950s dip.
+    int big = n < 6 ? n : 6;
+    float gx0 = area.x + area.width * 0.52f + 150 * S, gw = (area.x + area.width - 40 * S - gx0 - 24 * S) / 2;
+    float gy0 = listTop - 20 * S, gh = (area.y + area.height - 80 * S - gy0 - 2 * 30 * S) / 3;
+    for(int k = 0; k < big; k++) {
+        const ConceptStudy *c = &s->concepts[order[k]];
+        Rectangle box = {gx0 + (k % 2) * (gw + 24 * S), gy0 + (k / 2) * (gh + 30 * S), gw, gh};
+        text(c->label, box.x, box.y, 15, INK, true);
+        Axes a = {{box.x, box.y + 26 * S, box.width, box.height - 46 * S}, 1940, 1975, 1};
+        DrawRectangleRec((Rectangle){ax(&a, 1952), a.plot.y, ax(&a, 1960) - ax(&a, 1952), a.plot.height}, Fade(OLD, 0.08f));
+        DrawLineEx((Vector2){a.plot.x, ay(&a, 0.5f)}, (Vector2){a.plot.x + a.plot.width, ay(&a, 0.5f)}, 1, GRID);
+        DrawLineEx((Vector2){a.plot.x, a.plot.y + a.plot.height}, (Vector2){a.plot.x + a.plot.width, a.plot.y + a.plot.height}, 1, GRID);
+        DrawLineDashed((Vector2){ax(&a, 1952), a.plot.y}, (Vector2){ax(&a, 1952), a.plot.y + a.plot.height}, (int)(4 * S) + 1, (int)(4 * S) + 1, FAINT);
+        Vector2 prev = {0};
+        for(int yr = 1940; yr <= 1975; yr++) {
+            Vector2 p = {ax(&a, yr), ay(&a, observedAt(c, yr))};
+            if(yr > 1940) DrawLineEx(prev, p, 3 * S, mix(OLD, NEW, observedAt(c, yr) * 1.4f - 0.2f));
+            prev = p;
+        }
+        for(int yr = 1940; yr <= 1970; yr += 10) {
+            snprintf(line, sizeof line, "%d", yr);
+            textCentre(line, ax(&a, yr), a.plot.y + a.plot.height + 4 * S, 12, FAINT, false);
+        }
+    }
+    footer(area, s, "Pay: kavramın bütün kullanımları içinde bugünkü sözcüğün payı, en az yedi yıllık bir pencerede. Pembe şerit: 1952–1960.");
+}
+
 const char *viewName(View v) {
     static const char *NAMES[] = {"Kavram", "Değişim takvimi", "Sözcük yarışları", "Söz varlığının kökeni",
                                   "Kaybolan ve doğan sözcükler", "Zaman makinesi", "Sözcük ara",
                                   "Yüz yılın parmak izi", "On yılların sözcükleri", "Sözcüklerin ömrü",
-                                  "En çok kullanılanlar", "Metnin yaşı"};
+                                  "En çok kullanılanlar", "Metnin yaşı", "Geri dönüşler"};
     return v < VIEW_COUNT ? NAMES[v] : "?";
 }
 
@@ -1575,6 +1653,7 @@ void drawView(View v, const ChartState *st, Rectangle area) {
         case VIEW_SURVIVAL: drawSurvival(st, area); break;
         case VIEW_RANKING: drawRanking(st, area); break;
         case VIEW_DATING: drawDating(st, area); break;
+        case VIEW_REVERSALS: drawReversals(st, area); break;
         default: break;
     }
 }

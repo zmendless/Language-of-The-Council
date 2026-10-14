@@ -10,7 +10,7 @@
 //                                                        (zaman or siralama; make video)
 //
 // NAME is takvim, parmakizi, yarislar, koken, omur, sozcukler, onyillar, zaman (or
-// zaman:1950), siralama (or siralama:1950), tarih, a concept (yıl), or any other words, comma
+// zaman:1950), siralama (or siralama:1950), tarih, donusler, a concept (yıl), or any other words, comma
 // separated (efendi,sayın: their frequency). In the window: F full screen, P save the chart
 // as a PNG (into screenshots/), arrows change the concept or year, Space plays the
 // animation, E starts the exhibition mode (every chart in turn; any key stops it).
@@ -36,14 +36,14 @@
 #define BOOTSTRAP_ROUNDS 300
 
 static const View MENU[] = {VIEW_TIMELINE, VIEW_HEATMAP, VIEW_RACES, VIEW_TIME_MACHINE, VIEW_ORIGINS, VIEW_SURVIVAL,
-                            VIEW_ERAS, VIEW_DECADES, VIEW_RANKING, VIEW_DATING, VIEW_CONCEPT};
+                            VIEW_REVERSALS, VIEW_ERAS, VIEW_DECADES, VIEW_RANKING, VIEW_DATING, VIEW_CONCEPT};
 #define N_MENU (int)(sizeof MENU / sizeof MENU[0])
 
 // How MPs address each other: the comparison the exhibition mode and the figures show.
 #define ADDRESS_WORDS "efendi, muhterem, sayın, değerli"
 
 // The exhibition mode: every chart in turn, full screen. Animated views play to the end.
-static const View SHOW[] = {VIEW_TIMELINE, VIEW_HEATMAP, VIEW_TIME_MACHINE, VIEW_ORIGINS, VIEW_SURVIVAL,
+static const View SHOW[] = {VIEW_TIMELINE, VIEW_HEATMAP, VIEW_REVERSALS, VIEW_TIME_MACHINE, VIEW_ORIGINS, VIEW_SURVIVAL,
                             VIEW_RACES, VIEW_DECADES, VIEW_RANKING, VIEW_ERAS, VIEW_WORD, VIEW_DATING};
 #define N_SHOW (int)(sizeof SHOW / sizeof SHOW[0])
 #define SHOW_SECONDS 14
@@ -295,6 +295,7 @@ static void sidebar(Ui *ui, float h) {
             [VIEW_HEATMAP] = "Her kavram, her yıl:\nkırmızı eski sözcük,\nmavi bugünkü sözcük önde.\n\n1950'lerdeki kırmızı\nşerit: eskiye dönüş.",
             [VIEW_DECADES] = "Her on yılın en belirgin\nsözcükleri: dil ve tarih\nbir arada.",
             [VIEW_SURVIVAL] = "1920'lerin sık\nsözcüklerinden kaçı\nhâlâ kullanılıyor?",
+            [VIEW_REVERSALS] = "1952'de anayasa eski\ndiline döndü; yeni\nsözcükler de geri çekildi.",
             [VIEW_DATING] = "Program bir metnin\nyılını yalnızca\nsözcüklerinden tahmin\nediyor. Ne kadar iyi?",
         };
         if(HELP[ui->view]) label(HELP[ui->view], 20, y, 17, SIDE_MUTED, false);
@@ -386,6 +387,12 @@ static void captionFor(const Ui *ui, View v, char *out, int size) {
         case VIEW_ERAS:
             snprintf(out, size, "1920'lerin meclisini bugünün meclisinden en iyi ayıran sözcükler.");
             break;
+        case VIEW_REVERSALS: {
+            int n = 0;
+            for(int i = 0; i < s->nConcepts; i++) n += s->concepts[i].reversal.found;
+            snprintf(out, size, "1952'de anayasa eski diline dönünce %d kavramda yeni sözcük de geri çekildi; çoğu ancak 1960'larda toparlandı.", n);
+            break;
+        }
         case VIEW_DATING:
             snprintf(out, size, "Bir program, bir oturumun yılını yalnızca sözcüklerinden ortalama %s yıl hatayla buluyor.",
                      decimalComma(s->datingTest.meanError[DATE_LENGTHS - 1], 1));
@@ -492,7 +499,7 @@ static void selectByName(Ui *ui, const char *name) {
     static const struct { const char *name; View view; } NAMES[] = {
         {"takvim", VIEW_TIMELINE}, {"parmakizi", VIEW_HEATMAP}, {"yarislar", VIEW_RACES}, {"koken", VIEW_ORIGINS},
         {"omur", VIEW_SURVIVAL}, {"sozcukler", VIEW_ERAS}, {"onyillar", VIEW_DECADES}, {"zaman", VIEW_TIME_MACHINE},
-        {"siralama", VIEW_RANKING}, {"tarih", VIEW_DATING},
+        {"siralama", VIEW_RANKING}, {"tarih", VIEW_DATING}, {"donusler", VIEW_REVERSALS},
     };
     for(size_t i = 0; i < sizeof NAMES / sizeof NAMES[0]; i++) {
         size_t len = strlen(NAMES[i].name);
@@ -523,7 +530,7 @@ static int saveFigures(Ui *ui, const char *dir) {
     static const struct { View view; const char *file; } OVERVIEWS[] = {
         {VIEW_TIMELINE, "01-takvim"}, {VIEW_RACES, "02-yarislar"}, {VIEW_ORIGINS, "03-koken"}, {VIEW_ERAS, "04-sozcukler"},
         {VIEW_HEATMAP, "06-parmak-izi"}, {VIEW_SURVIVAL, "07-sozcuklerin-omru"}, {VIEW_DECADES, "08-on-yillar"},
-        {VIEW_WORD, "10-hitap"}, {VIEW_DATING, "11-metnin-yasi"},
+        {VIEW_WORD, "10-hitap"}, {VIEW_DATING, "11-metnin-yasi"}, {VIEW_REVERSALS, "12-geri-donusler"},
     };
     for(size_t i = 0; i < sizeof OVERVIEWS / sizeof OVERVIEWS[0]; i++, wanted++) {
         snprintf(path, sizeof path, "%s/%s.png", dir, OVERVIEWS[i].file);
