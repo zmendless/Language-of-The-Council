@@ -115,17 +115,23 @@ The time machine shows the observed shares (smoothed over a few years), not the 
 - `./evo web DB CONCEPTS RAW_DIR web/template.html out/web` puts the numbers into it as JSON (`out/web/data.json` too).
 - The page computes the same smoothed shares and rates as the viewer (`observedAt`, `smoothRate`, the ranking), so the two agree.
 - **The first screen** fills the window: an old word is struck through, an arrow appears, and today's word types in letter by letter while a year counter runs to the crossover year.
+  - Along its bottom, faint, is a horizon of the century: the share of Arabic and Persian words (red) falling and of Turkish words (blue) rising. A mark on it follows the year counter.
 - Each chapter's title states its finding, with the numbers filled in from the data ("Arapça ve Farsça sözcüklerin payı %73'ten %34'e indi").
 - **Metnin yaşı:** paste any text and the page guesses its years, with the telling words coloured by era (red old, blue new).
 - **Motion:**
   - charts over time sweep in from left to right the first time they are seen, and the time machine starts by itself;
+  - the first screen's lines rise in one after another; the small word curves in the cards sweep in after their card;
+  - in the time machine, a row flashes in the winner's colour when its new word overtakes the old one (red when an old word comes back);
+  - a word added to the search draws its curve across the century; the line under the menu glides to the chapter in view;
   - with the system's "reduce motion" setting, or with `#durgun` at the end of the address, nothing moves.
 - **Small details:**
   - **Word curves:** hovering over (or tapping) a word in the decade cards, the ranking or a dated text shows that word's curve over the century in the tooltip.
   - **"Biliyor muydunuz?" cards** between chapters, each with one surprising number from the data (the fastest change, *efendi* before and after 1934, a word that vanished, an Arabic word that held on, a word that never gave way). Each one links to its chart.
   - **Voices of the year:** while the time machine plays, a real sentence from about that year appears under the bars (`evo web` keeps 8 from every five years).
-  - **Ageing paper:** the time machine's background is yellowed in the 1920s and turns white towards today.
-- **A light/dark switch** in the navigation bar.
+  - **Ageing paper:** the time machine's background is yellowed and grainy in the 1920s and turns white towards today.
+  - **The year sliders** have a tick for each reform date, which turns red once the year has passed it.
+  - **Under the pointer:** the concept and search charts mark the five years under it; the heat map outlines its row and year; in the decade cards a word is underlined in every decade it belongs to.
+- **A light/dark switch** in the navigation bar. Where the browser supports view transitions, the new theme spreads from the switch in a circle.
 - **Smooth scrolling:**
   - the menu's links glide to their chapter, and on a phone the menu keeps the current chapter's link in view;
   - the time machine, the ranking and the first screen's animation pause while scrolled out of view and go on when they come back;
