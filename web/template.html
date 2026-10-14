@@ -93,7 +93,30 @@ button, input, select { font: inherit; color: inherit; }
 .lede b { color: var(--ink); font-weight: 700; }
 /* The first screen fills the window. One old word erases itself down to what it shares
    with today's word, which then types in; the year runs to when the new word took over. */
-.hero { min-height: min(100svh, 1100px); padding-block: 48px 72px; display: flex; flex-direction: column; justify-content: center; gap: 20px; position: relative; }
+.hero {
+    --horizon: clamp(84px, 14vh, 136px);
+    min-height: min(100svh, 1100px); padding-block: 48px calc(var(--horizon) + 28px); display: flex; flex-direction: column; justify-content: center; position: relative;
+}
+.hero-in { display: flex; flex-direction: column; gap: 20px; width: 100%; }
+/* The horizon along the bottom of the first screen: the share of Arabic and Persian words
+   falling and of Turkish words rising over the century, faint, with a mark at the year that
+   the typed word runs to. */
+.horizon { position: absolute; left: 0; bottom: 0; display: block; width: 100%; height: var(--horizon); pointer-events: none; overflow: visible; }
+.horizon .curve { fill: none; stroke-width: 2; stroke-linejoin: round; opacity: 0.55; }
+.horizon .when { stroke: var(--ink); stroke-dasharray: 2 4; opacity: 0.3; }
+.horizon circle { stroke: var(--bg); stroke-width: 2; }
+/* The first screen arrives line by line, the horizon sweeps in under it. Only with motion:
+   the script before the header sets "entrance" (not with reduced motion or #durgun). The fill
+   is "backwards" so that the morph's own fading still works afterwards. */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } }
+.entrance .hero-in > * { animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.entrance .hero-in > :nth-child(2) { animation-delay: 0.08s; }
+.entrance .hero-in > :nth-child(3) { animation-delay: 0.18s; }
+.entrance .hero-in > :nth-child(4) { animation-delay: 0.3s; }
+.entrance .hero-in > :nth-child(5) { animation-delay: 0.42s; }
+.entrance .horizon { animation: sweepRight 2.6s 0.3s cubic-bezier(0.45, 0, 0.2, 1) backwards; }
+.entrance .scroll-cue { animation: fadeIn 0.8s 1.4s backwards; }
 .morph {
     display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.32em; min-height: 1.15em; transition: opacity 0.35s;
     font-family: var(--display); font-weight: 800; font-size: clamp(2.3rem, 7.4vw, 5rem); line-height: 1.12;
@@ -113,7 +136,7 @@ button, input, select { font: inherit; color: inherit; }
 @keyframes blink { 50% { opacity: 0; } }
 .morph-year { font: 400 0.3em var(--mono); color: var(--muted); align-self: center; }
 .scroll-cue {
-    position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center;
+    position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center;
     gap: 2px; color: var(--muted); text-decoration: none; font: 500 0.8rem var(--mono); letter-spacing: 0.06em; transition: opacity 0.4s;
 }
 .scroll-cue svg { animation: nudge 1.8s ease-in-out infinite; }
@@ -399,14 +422,18 @@ svg .label { fill: var(--ink); }
 }
 </style>
 
-<header class="hero wrap">
-    <p class="eyebrow">TBMM tutanakları · 1920–2023</p>
-    <h1>Meclisin dili</h1>
-    <p class="lede" id="lede"></p>
-    <div class="morph" id="morph" aria-hidden="true">
-        <span class="morph-old" id="morph-old"></span><span class="morph-arrow" id="morph-arrow">→</span><span class="morph-new"><span id="morph-word"></span><span class="caret gone" id="caret"></span></span><span class="morph-year num" id="morph-year"></span>
+<script>if(!matchMedia("(prefers-reduced-motion: reduce)").matches && location.hash !== "#durgun") document.documentElement.classList.add("entrance");</script>
+<header class="hero">
+    <div class="wrap hero-in">
+        <p class="eyebrow">TBMM tutanakları · 1920–2023</p>
+        <h1>Meclisin dili</h1>
+        <p class="lede" id="lede"></p>
+        <div class="morph" id="morph" aria-hidden="true">
+            <span class="morph-old" id="morph-old"></span><span class="morph-arrow" id="morph-arrow">→</span><span class="morph-new"><span id="morph-word"></span><span class="caret gone" id="caret"></span></span><span class="morph-year num" id="morph-year"></span>
+        </div>
+        <div class="stats" id="stats"></div>
     </div>
-    <div class="stats" id="stats"></div>
+    <svg class="horizon" id="horizon" aria-hidden="true"></svg>
     <a class="scroll-cue" id="scroll-cue" href="#zaman">aşağı kaydırın<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M4 7l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 </header>
 
@@ -926,7 +953,66 @@ function busiestYears() {
     return {best, most};
 }
 
+// The horizon under the first screen: the share of Arabic and Persian words (red) and of
+// Turkish words (blue) among nouns and adjectives, averaged over 7 years so that it is calm.
+const HORIZON = {year: F, shown: F, moving: false};
+function drawHorizon() {
+    const s = document.getElementById("horizon"), w = s.clientWidth, h = s.clientHeight;
+    s.textContent = "";
+    s.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    const raw = YEARS.map(originShares);
+    const series = part => YEARS.map((_, i) => {
+        let total = 0, n = 0;
+        for(let j = Math.max(0, i - 3); j <= Math.min(NY - 1, i + 3); j++) if(raw[j]) { total += part(raw[j]); n++; }
+        return n ? total / n : NaN;
+    });
+    const x = scale(F, L, 0, w), y = scale(0.1, 0.8, h - 40, 4);   // the bottom strip is left for the cue
+    const lines = [{v: "--old", values: series(sh => sh[0] + sh[1])}, {v: "--new", values: series(sh => sh[2])}];
+    const defs = svg("defs", {}, s);
+    lines.forEach((line, k) => {
+        const g = svg("linearGradient", {id: "horizon-" + k, x1: 0, y1: 0, x2: 0, y2: 1}, defs);
+        svg("stop", {offset: 0, style: `stop-color: var(${line.v}); stop-opacity: 0.15`}, g);
+        svg("stop", {offset: 0.75, style: `stop-color: var(${line.v}); stop-opacity: 0`}, g);
+        const pts = YEARS.map((yr, i) => [x(yr), y(line.values[i])]);
+        svg("path", {d: path(pts) + `L${w},${h}L0,${h}Z`, fill: `url(#horizon-${k})`}, s);
+        svg("path", {d: path(pts), class: "curve", style: `stroke: var(${line.v})`}, s);
+    });
+    svg("text", {x: 12, y: h - 8, class: "axis"}, s).textContent = F;
+    svg("text", {x: w - 12, y: h - 8, "text-anchor": "end", class: "axis"}, s).textContent = L;
+    const when = svg("line", {class: "when", y1: 0, y2: h}, s);
+    const dots = lines.map(line => svg("circle", {r: 4, style: `fill: var(${line.v})`}, s));
+    HORIZON.place = () => {   // the mark at HORIZON.shown, between two years if it is moving
+        const t = clamp(HORIZON.shown, F, L), i = Math.min(NY - 2, Math.floor(t - F)), f = t - F - i;
+        when.setAttribute("x1", x(t));
+        when.setAttribute("x2", x(t));
+        lines.forEach((line, k) => {
+            dots[k].setAttribute("cx", x(t));
+            dots[k].setAttribute("cy", y(line.values[i] * (1 - f) + line.values[i + 1] * f));
+        });
+    };
+    HORIZON.place();
+}
+// Moves the mark to a year: it glides there, as the time machine's bars do.
+function horizonAt(year) {
+    HORIZON.year = year;
+    if(STILL) { HORIZON.shown = year; HORIZON.place(); return; }
+    if(HORIZON.moving) return;
+    HORIZON.moving = true;
+    let last = performance.now();
+    const step = now => {
+        const k = 1 - Math.exp(-(now - last) / 140);
+        last = now;
+        HORIZON.shown += (HORIZON.year - HORIZON.shown) * k;
+        if(Math.abs(HORIZON.year - HORIZON.shown) < 0.05) HORIZON.shown = HORIZON.year;
+        HORIZON.place();
+        if(HORIZON.shown !== HORIZON.year) requestAnimationFrame(step);
+        else HORIZON.moving = false;
+    };
+    requestAnimationFrame(step);
+}
+
 function hero() {
+    drawHorizon();
     const millions = (D.words / 1e6).toLocaleString("tr-TR", {maximumFractionDigits: 1});
     document.getElementById("lede").innerHTML =
         `Meclis'te 1920'den bugüne konuşulan <b>${millions} milyon sözcük</b>. Hangi sözcük eskisinin yerini ne zaman aldı, hangisi tutmadı, hangisi geri döndü?`;
@@ -961,6 +1047,7 @@ function morph() {
         arrow.classList.add("on");
         word.textContent = p.to.join("");
         year.textContent = p.year;
+        horizonAt(p.year);
         return;
     }
     const wait = ms => new Promise(done => setTimeout(done, ms));
@@ -973,6 +1060,7 @@ function morph() {
             arrow.classList.remove("on");
             word.textContent = "";
             year.textContent = 1920;
+            horizonAt(1920);
             box.classList.remove("out");
             await wait(900);
             old.classList.add("struck");
@@ -983,6 +1071,7 @@ function morph() {
             for(let n = 0; n < p.to.length; n++) {
                 word.textContent = p.to.slice(0, n + 1).join("");
                 year.textContent = Math.round(1920 + (p.year - 1920) * (n + 1) / p.to.length);
+                horizonAt(+year.textContent);
                 await wait(95);
             }
             await wait(700);
@@ -2200,6 +2289,7 @@ function setupTheme() {
 // ---------------------------------------------------------------- start
 
 function drawAll() {
+    drawHorizon();
     drawTimeline();
     drawTimelineSide();
     drawConcept();
