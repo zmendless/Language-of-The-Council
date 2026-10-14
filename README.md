@@ -116,7 +116,7 @@ The time machine shows the observed shares (smoothed over a few years), not the 
 - `web/template.html` is the page: HTML, CSS and plain JavaScript, no libraries.
 - `./evo web DB CONCEPTS RAW_DIR web/template.html out/web` puts the numbers into it as JSON (`out/web/data.json` too).
 - The page computes the same smoothed shares and rates as the viewer (`observedAt`, `smoothRate`, the ranking), so the two agree.
-- **The first screen** fills the window. An old word erases itself letter by letter down to what it shares with today's word (*başvekil* → *baş…* → *başbakan*), which then types in while a year counter runs to the crossover year.
+- **The first screen** fills the window: an old word is struck through, an arrow appears, and today's word types in letter by letter while a year counter runs to the crossover year.
 - Each chapter's title states its finding, with the numbers filled in from the data ("Arapça ve Farsça sözcüklerin payı %73'ten %34'e indi").
 - **Metnin yaşı:** paste any text and the page guesses its years, with the telling words coloured by era (red old, blue new).
 - **Motion:**

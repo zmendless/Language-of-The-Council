@@ -83,18 +83,23 @@ button, input, select { font: inherit; color: inherit; }
    with today's word, which then types in; the year runs to when the new word took over. */
 .hero { min-height: min(100svh, 1100px); padding-block: 48px 72px; display: flex; flex-direction: column; justify-content: center; gap: 20px; position: relative; }
 .morph {
-    display: flex; align-items: baseline; gap: 0.22em; min-height: 1.1em; white-space: nowrap; overflow: hidden;
-    font-family: var(--display); font-weight: 800; font-size: clamp(2.6rem, 10.5vw, 7.4rem); line-height: 1.05;
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.32em; min-height: 1.15em; transition: opacity 0.35s;
+    font-family: var(--display); font-weight: 800; font-size: clamp(2.3rem, 7.4vw, 5rem); line-height: 1.12;
 }
-.morph-word { color: var(--old); transition: color 0.35s; }
-.morph-word.new { color: var(--new); }
-.caret { width: 0.055em; height: 0.78em; align-self: center; margin-left: -0.18em; background: currentColor; color: var(--faint); animation: blink 1.05s steps(1) infinite; }
+.morph.out { opacity: 0; }
+/* The old word is struck through by a line that draws across it. */
+.morph-old {
+    color: var(--old); white-space: nowrap;
+    background: linear-gradient(currentColor, currentColor) 0 60% / 0% 0.07em no-repeat; transition: background-size 0.45s ease;
+}
+.morph-old.struck { background-size: 100% 0.07em; }
+.morph-arrow { color: var(--faint); font-weight: 500; opacity: 0; transition: opacity 0.3s; }
+.morph-arrow.on { opacity: 1; }
+.morph-new { color: var(--new); white-space: nowrap; }
+.caret { display: inline-block; width: 0.055em; height: 0.78em; margin-left: 0.04em; vertical-align: -0.05em; background: currentColor; animation: blink 1.05s steps(1) infinite; }
 .caret.gone { visibility: hidden; }
 @keyframes blink { 50% { opacity: 0; } }
-.morph-year { font: 400 0.24em var(--mono); color: var(--muted); }
-.morph-note { font: 500 0.95rem var(--mono); letter-spacing: 0.04em; min-height: 1.5em; color: var(--old); transition: color 0.35s; }
-.morph-note.new { color: var(--new); }
-.morph-note .struck { text-decoration: line-through; }
+.morph-year { font: 400 0.3em var(--mono); color: var(--muted); align-self: center; }
 .scroll-cue {
     position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center;
     gap: 2px; color: var(--muted); text-decoration: none; font: 500 0.8rem var(--mono); letter-spacing: 0.06em; transition: opacity 0.4s;
@@ -316,6 +321,7 @@ svg .label { fill: var(--ink); }
 }
 @media (prefers-reduced-motion: reduce) {
     .caret, .scroll-cue svg { animation: none; }
+    .morph, .morph-old, .morph-arrow { transition: none; }
     .reveal { opacity: 1; transform: none; }
     .sweep > svg, .sweep-down > svg { clip-path: none !important; animation: none !important; }
     .originbar span { transition: none; }
@@ -327,9 +333,8 @@ svg .label { fill: var(--ink); }
     <h1>Meclisin dili</h1>
     <p class="lede" id="lede"></p>
     <div class="morph" id="morph" aria-hidden="true">
-        <span class="morph-word" id="morph-word"></span><span class="caret" id="caret"></span><span class="morph-year num" id="morph-year"></span>
+        <span class="morph-old" id="morph-old"></span><span class="morph-arrow" id="morph-arrow">→</span><span class="morph-new"><span id="morph-word"></span><span class="caret gone" id="caret"></span></span><span class="morph-year num" id="morph-year"></span>
     </div>
-    <p class="morph-note" id="morph-note" aria-hidden="true"></p>
     <div class="stats" id="stats"></div>
     <a class="scroll-cue" id="scroll-cue" href="#zaman">aşağı kaydırın<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M4 7l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
 </header>
@@ -868,45 +873,50 @@ function hero() {
     addEventListener("scroll", () => cue.classList.toggle("gone", scrollY > 40), {passive: true});
 }
 
-// One meaning after another: the old word erases itself letter by letter down to what it
-// shares with today's word (başvekil → baş… → başbakan), which then types in, while the
-// year runs to the crossover. Still (reduced motion or #durgun): the pair at rest.
+// One meaning after another: the old word, struck through; an arrow; today's word typed in
+// letter by letter while the year runs to the crossover. Still (reduced motion or
+// #durgun): the first pair at rest.
 function morph() {
-    const word = document.getElementById("morph-word"), year = document.getElementById("morph-year");
-    const note = document.getElementById("morph-note"), caret = document.getElementById("caret");
-    const pairs = CROSSED.map(c => ({from: [...c.oldWord], to: [...c.newWord], year: Math.round(c.fit.crossover)}));
-    const setNew = on => { word.classList.toggle("new", on); note.classList.toggle("new", on); };
+    const box = document.getElementById("morph"), old = document.getElementById("morph-old");
+    const arrow = document.getElementById("morph-arrow"), word = document.getElementById("morph-word");
+    const caret = document.getElementById("caret"), year = document.getElementById("morph-year");
+    const pairs = CROSSED.map(c => ({from: c.oldWord, to: [...c.newWord], year: Math.round(c.fit.crossover)}));
     if(STILL) {
         const p = pairs[0];
+        old.textContent = p.from;
+        old.style.transition = arrow.style.transition = "none";   // at rest from the start
+        old.classList.add("struck");
+        arrow.classList.add("on");
         word.textContent = p.to.join("");
-        setNew(true);
-        caret.classList.add("gone");
         year.textContent = p.year;
-        note.innerHTML = `<span class="struck">${esc(p.from.join(""))}</span> → ${esc(p.to.join(""))} · yeni sözcük ${locative(p.year)} öne geçti`;
         return;
     }
     const wait = ms => new Promise(done => setTimeout(done, ms));
     const run = async () => {
         for(let i = 0; ; i++) {
             const p = pairs[i % pairs.length];
-            let same = 0;
-            while(same < p.from.length && same < p.to.length && p.from[same] === p.to[same]) same++;
-            setNew(false);
-            word.textContent = p.from.join("");
+            old.textContent = p.from;
+            old.classList.remove("struck");
+            arrow.classList.remove("on");
+            word.textContent = "";
             year.textContent = 1920;
-            note.textContent = "eski sözcük";
-            await wait(1100);
-            // The year runs from 1920 to the crossover while the letters change.
-            const steps = (p.from.length - same) + (p.to.length - same);
-            let k = 0;
-            const tick = () => { k++; year.textContent = Math.round(1920 + (p.year - 1920) * k / steps); };
-            for(let n = p.from.length; n > same; n--) { word.textContent = p.from.slice(0, n - 1).join(""); tick(); await wait(60); }
-            setNew(true);
-            await wait(160);
-            for(let n = same; n < p.to.length; n++) { word.textContent = p.to.slice(0, n + 1).join(""); tick(); await wait(85); }
-            year.textContent = p.year;
-            note.textContent = `bugünkü sözcük · ${locative(p.year)} öne geçti`;
-            await wait(2000);
+            box.classList.remove("out");
+            await wait(900);
+            old.classList.add("struck");
+            await wait(500);
+            arrow.classList.add("on");
+            caret.classList.remove("gone");
+            await wait(300);
+            for(let n = 0; n < p.to.length; n++) {
+                word.textContent = p.to.slice(0, n + 1).join("");
+                year.textContent = Math.round(1920 + (p.year - 1920) * (n + 1) / p.to.length);
+                await wait(95);
+            }
+            await wait(700);
+            caret.classList.add("gone");
+            await wait(1700);
+            box.classList.add("out");
+            await wait(400);
         }
     };
     run();
