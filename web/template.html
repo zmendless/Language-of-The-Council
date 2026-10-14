@@ -178,8 +178,9 @@ button, input, select { font: inherit; color: inherit; }
 .tm-row .n { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tm-row .o.lead { color: var(--old); font-weight: 700; }
 .tm-row .n.lead { color: var(--new); font-weight: 700; }
-.tm-bar { height: 12px; border-radius: 6px; background: var(--old); position: relative; overflow: hidden; }
-.tm-bar b { position: absolute; inset: 0; background: var(--new); transform-origin: 100% 50%; will-change: transform; }
+/* One element, red then blue with a hard edge at the new word's share (--p): both colours
+   share the same rounded ends and height, whatever the browser does with layers. */
+.tm-bar { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--old) calc(100% - var(--p, 0%)), var(--new) 0); }
 
 /* timeline side cards */
 .split { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
@@ -956,7 +957,7 @@ function setupTimeMachine() {
         const b = html("button", {class: "tm-row", type: "button", title: c.label}, rows);
         const o = html("span", {class: "o"}, b, c.oldWord);
         const bar = html("span", {class: "tm-bar"}, b);
-        const fill = html("b", {}, bar);
+        const fill = bar;
         const n = html("span", {class: "n"}, b, c.newWord);
         b.addEventListener("click", () => { showConcept(c); document.getElementById("kavram").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth"}); });
         TM.rows.push({c, o, n, fill, shown: NaN, target: 0});
@@ -1019,7 +1020,7 @@ function drawTimeMachine(t) {
 // noisy, and the slider can move many years at once.
 function easeBars() {
     const show = r => {
-        r.fill.style.transform = `scaleX(${r.shown.toFixed(4)})`;   // a transform: no layout on every frame
+        r.fill.style.setProperty("--p", (r.shown * 100).toFixed(2) + "%");   // repaints the bar only, no layout
         r.o.classList.toggle("lead", r.shown <= 0.5);
         r.n.classList.toggle("lead", r.shown > 0.5);
     };

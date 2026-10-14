@@ -129,7 +129,7 @@ The time machine shows the observed shares (smoothed over a few years), not the 
 - **Smooth scrolling:**
   - the menu's links glide to their chapter, and on a phone the menu keeps the current chapter's link in view;
   - the time machine, the ranking and the first screen's animation pause while scrolled out of view and go on when they come back;
-  - the bars move with transforms, so a frame never has to lay out the page again.
+  - each time machine bar is one element with a hard red-to-blue colour split, so a frame only repaints the bars and never lays out the page again.
 
 ![races](docs/yarislar.png)
 
