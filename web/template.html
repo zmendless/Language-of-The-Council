@@ -275,78 +275,6 @@ button, input, select { font: inherit; color: inherit; }
 /* ageing paper: the time machine's chapter is yellowed in the 1920s and white today */
 #zaman { background: color-mix(in srgb, var(--sepia) var(--age, 0%), var(--bg)); }
 
-/* ---------------------------------------------------------------- the guide
-   A two-page preview of the project as a little book: a cover that swings open on its
-   left edge to an inside spread. Both pages sit in one grid cell, so opening it never
-   changes the height of the page. */
-.guide { --paper: color-mix(in srgb, var(--quote) 70%, var(--surface)); --spine: color-mix(in srgb, var(--ink) 12%, transparent); }
-.guide-stage { display: grid; perspective: 2200px; }
-.guide-cover, .guide-spread { grid-area: 1 / 1; }
-.guide-cover {
-    justify-self: center; width: min(100%, 520px); position: relative; z-index: 2;
-    background: var(--paper); border: 1px solid var(--line); border-radius: 4px 14px 14px 4px; padding: 40px 38px 34px;
-    box-shadow: inset 10px 0 0 var(--spine), 0 24px 48px -24px rgba(0, 0, 0, 0.35);
-    transform-origin: 0 50%; transition: transform 0.9s cubic-bezier(0.6, 0, 0.25, 1), opacity 0.5s 0.35s;
-    display: grid; gap: 14px; align-content: start;
-}
-.guide-spread {
-    display: grid; grid-template-columns: 1fr 1fr; background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
-    box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.35); overflow: hidden;
-    opacity: 0; transform: scale(0.97); transition: opacity 0.6s 0.3s, transform 0.8s 0.25s cubic-bezier(0.2, 0.7, 0.2, 1); visibility: hidden;
-}
-.guide[data-open="true"] .guide-cover { transform: rotateY(-100deg); opacity: 0; pointer-events: none; }
-.guide[data-open="true"] .guide-spread { opacity: 1; transform: none; visibility: visible; }
-.g-page { position: relative; padding: 40px 40px 52px; display: grid; gap: 16px; align-content: start; }
-.g-left { background: linear-gradient(90deg, transparent 92%, var(--spine)); }
-.g-right { background: linear-gradient(90deg, var(--spine), transparent 8%); }
-.g-kicker { font: 500 0.78rem var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--old); }
-.g-title { font: 800 clamp(3.2rem, 9vw, 5rem)/0.92 var(--display); letter-spacing: -0.01em; }
-.g-sub { font: 500 1.2rem/1.4 var(--display); color: var(--muted); max-width: 26ch; }
-.g-author { font-size: 0.9rem; color: var(--faint); }
-.g-label { font: 500 0.72rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.g-inside { border-top: 1px solid var(--line); padding-top: 14px; }
-.g-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.g-stats div { display: grid; }
-.g-stats b { font: 800 1.45rem/1.1 var(--display); color: var(--ink); }
-.g-stats span { font-size: 0.8rem; color: var(--muted); }
-.g-toc { border-top: 1px solid var(--line); padding-top: 14px; }
-.g-toc ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; counter-reset: toc; }
-.g-toc li { counter-increment: toc; display: grid; grid-template-columns: 2.2em 1fr; }
-.g-toc li::before { content: counter(toc, decimal-leading-zero); font: 500 0.82rem var(--mono); color: var(--faint); padding-top: 3px; }
-.g-toc a { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--faint); justify-self: start; }
-.g-toc a:hover { color: var(--new); border-color: var(--new); }
-.g-open { justify-self: start; margin-top: 6px; }
-.g-h { font: 800 1.7rem/1.15 var(--display); }
-.g-body { display: grid; gap: 10px; color: var(--muted); font-size: 1.02rem; }
-.g-body b { color: var(--ink); }
-.g-body p:first-child::first-letter { font: 800 3.1em/0.8 var(--display); float: left; margin: 6px 8px 0 0; color: var(--old); }
-.g-pull { margin: 4px 0 0; padding: 14px 0 0 18px; border-left: 3px solid var(--old); }
-.g-pull blockquote { margin: 0; font: italic 500 1.2rem/1.45 var(--display); color: var(--ink); }
-.g-pull mark { background: none; color: var(--old); font-weight: 700; }
-.g-pull figcaption { margin-top: 6px; font-size: 0.82rem; color: var(--faint); }
-.g-steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; counter-reset: step; }
-.g-steps li { counter-increment: step; display: grid; grid-template-columns: 2.4rem 1fr; gap: 12px; align-items: start; }
-.g-steps li::before {
-    content: counter(step); display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 50%;
-    background: var(--new); color: #fff; font: 700 1rem var(--display);
-}
-.g-steps b { display: block; font: 700 1.05rem var(--display); }
-.g-steps span { color: var(--muted); font-size: 0.95rem; }
-.g-close { justify-self: start; }
-.g-folio { position: absolute; bottom: 18px; font: 0.8rem var(--mono); color: var(--faint); }
-.g-left .g-folio { left: 40px; }
-.g-right .g-folio { right: 40px; }
-@media (max-width: 760px) {
-    .guide-spread { grid-template-columns: 1fr; }
-    .g-left { background: none; border-bottom: 1px dashed var(--line); }
-    .g-right { background: none; }
-    .g-page, .guide-cover { padding: 28px 22px 44px; }
-    .g-stats { grid-template-columns: repeat(2, 1fr); }
-}
-@media (prefers-reduced-motion: reduce) {
-    .guide-cover, .guide-spread { transition: none; }
-}
-
 /* dating a text */
 .era-legend { margin-top: 12px; align-items: center; }
 .era-legend .ramp { display: inline-block; width: 160px; height: 10px; border-radius: 5px; vertical-align: -1px; margin-inline: 8px;
@@ -448,7 +376,6 @@ svg .label { fill: var(--ink); }
 <nav class="toc" aria-label="Bölümler">
     <div class="progress" id="progress" aria-hidden="true"></div>
     <ul>
-        <li><a href="#rehber">Rehber</a></li>
         <li><a href="#zaman">Zaman makinesi</a></li>
         <li><a href="#takvim">Değişim takvimi</a></li>
         <li><a href="#kavram">Bir kavram</a></li>
@@ -465,48 +392,6 @@ svg .label { fill: var(--ink); }
 </nav>
 
 <main>
-    <section class="chapter" id="rehber">
-        <div class="wrap">
-            <div class="guide" id="guide" data-open="false">
-                <div class="guide-stage">
-                    <!-- Page 1: the cover -->
-                    <article class="guide-cover" id="guide-cover" aria-label="Rehberin kapağı">
-                        <p class="g-kicker">Dijital rehber · TÜBİTAK 2204-A</p>
-                        <h2 class="g-title">Meclisin<br>Dili</h2>
-                        <p class="g-sub">Yüz yılda Türkçe: bir sözcük eskisinin yerini nasıl alır?</p>
-                        <p class="g-author">Hazırlayan: proje ekibi</p>
-                        <div class="g-inside">
-                            <p class="g-label">İçinde neler var</p>
-                            <div class="g-stats" id="g-stats"></div>
-                        </div>
-                        <div class="g-toc">
-                            <p class="g-label">İçindekiler</p>
-                            <ol id="g-toc"></ol>
-                        </div>
-                        <button class="btn primary g-open" id="g-open" type="button">Rehberi aç →</button>
-                    </article>
-                    <!-- Page 2: an open spread, a lesson and the method -->
-                    <div class="guide-spread" id="guide-spread" aria-label="Rehberin ilk dersi">
-                        <article class="g-page g-left">
-                            <p class="g-kicker">Ders 1</p>
-                            <h3 class="g-h">Bir sözcük nasıl yerini kaptırır?</h3>
-                            <div class="g-body" id="g-lesson"></div>
-                            <figure class="g-pull" id="g-pull"></figure>
-                            <span class="g-folio">2</span>
-                        </article>
-                        <article class="g-page g-right">
-                            <p class="g-kicker">Adım adım</p>
-                            <h3 class="g-h">Nasıl ölçtük?</h3>
-                            <ol class="g-steps" id="g-steps"></ol>
-                            <button class="btn g-close" id="g-close" type="button">← Kapağa dön</button>
-                            <span class="g-folio">3</span>
-                        </article>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section class="chapter" id="zaman">
         <div class="wrap">
             <div class="head">
@@ -1793,53 +1678,6 @@ function drawSearch() {
     hover.addEventListener("pointerleave", () => { hideTip(); line.setAttribute("opacity", 0); });
 }
 
-// ---------------------------------------------------------------- the guide
-
-// The project as a little book: the cover's numbers and contents come from the data; the
-// lesson is sene → yıl, with a real sentence from the oldest transcript that has sene.
-function setupGuide() {
-    const guide = document.getElementById("guide");
-    const millions = (D.words / 1e6).toLocaleString("tr-TR", {maximumFractionDigits: 1});
-    document.getElementById("g-stats").innerHTML = [
-        [nf.format(D.sittings), "oturum"], [millions, "milyon sözcük"], [D.concepts.length, "kavram"], [`${F}–${L}`, "yüz yıl"],
-    ].map(([b, t]) => `<div><b>${b}</b><span>${t}</span></div>`).join("");
-    const toc = document.getElementById("g-toc");
-    for(const [id, name] of [["zaman", "Zaman makinesi"], ["takvim", "Yeni sözcük ne zaman öne geçti?"], ["koken", "Sözcükler nereden geliyor?"],
-                             ["omur", "1920'lerin sözcüklerinden kaçı yaşıyor?"], ["tarih", "Bir metnin yaşını bulan program"]]) {
-        const li = html("li", {}, toc);
-        html("a", {href: "#" + id}, li, name);
-    }
-    const c = D.concepts.find(c => c.id === "yıl");
-    if(c) {
-        const f = c.fit, cross = Math.round(f.crossover);
-        document.getElementById("g-lesson").innerHTML =
-            `<p>Bir zamanlar meclis yıla <b>sene</b> derdi. Dil Devrimi'yle <b>yıl</b> önerildi, ama kimse bir gecede sözcük değiştirmez: önce birkaç kişi kullanır, sonra hızla yayılır, en sonunda eski sözcük birkaç kişiye kalır.</p>` +
-            `<p>Bu yavaş–hızlı–yavaş yürüyüşe <b>S-eğrisi</b> denir. <b>Yıl</b>, ${locative(cross)} kullanımın yarısını geçti ve değişim ${Math.round(f.duration)} yıl sürdü.</p>`;
-        const old = c.words.find(w => w.role === "old");
-        const ex = old && [...old.ex].sort((a, b) => a.y - b.y)[0];
-        if(ex) {
-            const before = ex.b.length > 70 ? "…" + ex.b.slice(-70).replace(/^\S*\s/, "") : ex.b;
-            const after = ex.a.length > 60 ? ex.a.slice(0, 60).replace(/\s\S*$/, "") + "…" : ex.a;
-            document.getElementById("g-pull").innerHTML =
-                `<blockquote>“${esc(before)}<mark>${esc(ex.w)}</mark>${esc(after)}”</blockquote><figcaption>${ex.y} · ${esc(sittingName(ex.id))}</figcaption>`;
-        }
-    }
-    const t = DM.test;
-    document.getElementById("g-steps").innerHTML = [
-        ["Tutanakları topla", `TBMM'nin PDF'lerinden ${nf.format(D.sittings)} oturumun metni.`],
-        ["Temizle", "İçindekiler, ekler ve konuşmacı adları çıkar: yalnızca konuşmalar kalır."],
-        ["Say", "Her sözcük bütün çekimleriyle: yıl, yılı, yıllarda…"],
-        ["Eğriyi çiz", "Her kavram için yeni sözcüğün payına bir S-eğrisi; geçiş yılı ve güven aralığı."],
-        ["Sına", `Program, görmediği bir oturumun yılını ortalama ${nf.format(t.err[t.len.indexOf(0)])} yıl hatayla buluyor.`],
-    ].map(([b, t]) => `<li><div><b>${b}</b><span>${t}</span></div></li>`).join("");
-    const open = on => {
-        guide.dataset.open = on;
-        (on ? document.getElementById("g-close") : document.getElementById("g-open")).focus({preventScroll: true});
-    };
-    document.getElementById("g-open").addEventListener("click", () => open(true));
-    document.getElementById("g-close").addEventListener("click", () => open(false));
-}
-
 // ---------------------------------------------------------------- dating a text
 
 // The tokenizer of src/text.c (tokNext), so that the page splits words as the counts did.
@@ -2327,7 +2165,6 @@ drawDecades();
 setupRace();
 setupSearch();
 setupDating();
-setupGuide();
 writeMethod();
 writeFacts();
 drawAll();
