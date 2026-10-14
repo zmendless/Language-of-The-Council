@@ -282,6 +282,9 @@ button, input, select { font: inherit; color: inherit; }
 .cloud { display: flex; flex-wrap: wrap; gap: 0 12px; align-items: baseline; line-height: 1.25; }
 .cloud button { background: none; border: 0; padding: 0; font-family: var(--display); font-weight: 700; cursor: pointer; }
 .cloud button:hover { text-decoration: underline; }
+.cloud button { transition: opacity 0.2s; }
+.decades.dim .cloud button:not(.same) { opacity: 0.22; }
+.decades.dim .cloud button.same { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 
 /* ranking */
 .race { position: relative; }
@@ -369,6 +372,14 @@ footer::before { content: ""; display: block; height: 1px; background: var(--lin
 .tip .num { font-size: 0.85rem; }
 
 svg text { fill: var(--muted); font-family: var(--body); }
+/* the timeline's rows and the heat map's cell answer the pointer */
+.chart .row .hit { fill: var(--ink); fill-opacity: 0; transition: fill-opacity 0.15s; }
+.chart .row:hover .hit { fill-opacity: 0.07; }
+.chart .row:hover .label { font-weight: 700; }
+.hm-mark { position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+.hm-on .hm-mark { opacity: 1; }
+.hm-row { border-radius: 2px; box-shadow: 0 0 0 1.5px var(--ink); }
+.hm-year { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 50%, transparent); }
 svg .axis { font: 12px var(--mono); fill: var(--faint); }
 svg .label { fill: var(--ink); }
 
@@ -907,6 +918,31 @@ function eventLines(g, x, top, bottom, labels) {
     });
 }
 
+// The five years under the pointer in a chart over time: a faint band behind them and their
+// points a little bigger. Made before the points, so that the band lies behind them; add()
+// tells it which points belong to the period starting in year b.
+function periodMarker(s, x, top, h) {
+    const band = svg("rect", {y: top, height: h, rx: 3, fill: css("--ink"), opacity: 0}, s);
+    const m = {dots: new Map(), at: null};
+    const grow = (b, k) => (m.dots.get(b) || []).forEach(d => d.setAttribute("r", d.dataset.r * k));
+    m.add = (b, dot) => {
+        dot.dataset.r = dot.getAttribute("r");
+        if(!m.dots.has(b)) m.dots.set(b, []);
+        m.dots.get(b).push(dot);
+    };
+    m.show = b => {
+        if(b === m.at) return;
+        grow(m.at, 1);
+        grow(b, 1.45);
+        m.at = b;
+        band.setAttribute("x", x(b - 0.5));   // the points stand at b + 2
+        band.setAttribute("width", x(b + 4.5) - x(b - 0.5));
+        band.setAttribute("opacity", 0.06);
+    };
+    m.hide = () => { grow(m.at, 1); m.at = null; band.setAttribute("opacity", 0); };
+    return m;
+}
+
 // One tooltip for the whole page.
 const tip = document.getElementById("tip");
 function showTip(htmlText, ev) {
@@ -1237,14 +1273,14 @@ function drawTimeline() {
     eventLines(s, x, top, bottom, !narrow);
     CROSSED.forEach((c, i) => {
         const y = top + i * rowH + rowH / 2, f = c.fit, col = css(THEMES[c.group] ? THEMES[c.group].v : "--muted");
-        const g = svg("g", {style: "cursor: pointer"}, s);
+        const g = svg("g", {class: "row", style: "cursor: pointer"}, s);
         if(i % 2 === 0) svg("rect", {x: 0, y: y - rowH / 2, width: w, height: rowH, fill: css("--line"), opacity: 0.35}, g);
         svg("text", {x: labelW, y: y + 4, "text-anchor": "end", "font-size": narrow ? 11 : 12.5, class: "label"}, g).textContent = narrow ? c.newWord : c.label;
         if(f.lo !== null) svg("line", {x1: x(f.lo), x2: x(f.hi), y1: y, y2: y, stroke: col, "stroke-width": 3, opacity: f.uncertain ? 0.25 : 0.45, "stroke-linecap": "round"}, g);
         const r = Math.min(rowH * 0.36, 3.5 + 1.4 * Math.log10(f.uses + 1));
         if(f.status === 1) svg("circle", {cx: x(f.crossover), cy: y, r: r - 1, fill: css("--surface"), stroke: col, "stroke-width": 2.5}, g);
         else svg("circle", {cx: x(f.crossover), cy: y, r, fill: col, opacity: f.uncertain ? 0.45 : 1}, g);
-        svg("rect", {x: 0, y: y - rowH / 2, width: w, height: rowH, fill: "transparent"}, g);
+        svg("rect", {x: 0, y: y - rowH / 2, width: w, height: rowH, class: "hit"}, g);   // the pointer's target, tinted under it
         g.addEventListener("pointermove", ev => showTip(
             `<b>${esc(c.label)}</b><br>Geçiş yılı <span class="num">${Math.round(f.crossover)}</span>` +
             (f.lo !== null ? ` <span class="num">(${Math.round(f.lo)}–${Math.round(f.hi)})</span>` : "") +
@@ -1356,7 +1392,7 @@ function drawConcept() {
     // Points per 5 years with 95% intervals, sized by how many uses they rest on.
     let maxTotal = 1;
     for(let b = 1920; b <= L; b += 5) maxTotal = Math.max(maxTotal, sum(c.allUses, ix(b), ix(b + 4)));
-    const bins = [];
+    const bins = [], mark = periodMarker(s, x, top, h);
     c.words.forEach(word => {
         const col = css(roleVar(word.role));
         for(let b = 1920; b <= L; b += 5) {
@@ -1364,7 +1400,7 @@ function drawConcept() {
             if(!n) continue;
             const [lo, hi] = wilson(k, n), px = x(b + 2);
             svg("line", {x1: px, x2: px, y1: y(lo), y2: y(hi), stroke: col, "stroke-width": 2.5, opacity: 0.3}, s);
-            svg("circle", {cx: px, cy: y(k / n), r: 3 + 5 * Math.sqrt(n / maxTotal), fill: col}, s);
+            mark.add(b, svg("circle", {cx: px, cy: y(k / n), r: 3 + 5 * Math.sqrt(n / maxTotal), fill: col}, s));
         }
     });
     for(let b = 1920; b <= L; b += 5) bins.push(b);
@@ -1377,9 +1413,10 @@ function drawConcept() {
         let t = `<b>${b}–${b + 4}</b>`;
         c.words.forEach(word => { const k = sum(word.n, ix(b), ix(b + 4)); t += `<br>${esc(word.w)}: <span class="num">${nf.format(k)}${n ? " (" + pct(k / n) + ")" : ""}</span>`; });
         if(f.ok) t += `<br>S-eğrisi: <span class="num">${pct(fitShare(f, b + 2))}</span>`;
+        mark.show(b);
         showTip(t, ev);
     });
-    hover.addEventListener("pointerleave", hideTip);
+    hover.addEventListener("pointerleave", () => { hideTip(); mark.hide(); });
     // Legend.
     let lx = w - 12;
     [...c.words].reverse().forEach(word => {
@@ -1465,15 +1502,21 @@ function drawHeatmap() {
     for(let i = 0; i < kw; i++) { g.fillStyle = color(i / kw); g.fillRect(kx + i, ky, 1.2, 10); }
     g.font = `11px ${css("--body")}`; g.textAlign = "left"; g.fillStyle = css("--old"); g.fillText("eski önde", kx, ky + 24);
     g.textAlign = "right"; g.fillStyle = css("--new"); g.fillText("bugünkü önde", kx + kw, ky + 24);
+    // The row and the year under the pointer, outlined over the canvas.
+    const markRow = html("div", {class: "hm-mark hm-row"}, box), markYear = html("div", {class: "hm-mark hm-year"}, box);
+    const unmark = () => { box.classList.remove("hm-on"); hideTip(); };
     cv.onpointermove = ev => {
         const r = cv.getBoundingClientRect(), px = ev.clientX - r.left, py = ev.clientY - r.top;
         const i = Math.floor((py - top) / rowH), yr = Math.floor(x.invert(px));
-        if(i < 0 || i >= ORDER.length || yr < 1920 || yr > L) return hideTip();
+        if(i < 0 || i >= ORDER.length || yr < 1920 || yr > L) return unmark();
+        markRow.style.cssText = `top: ${top + i * rowH - 1}px; left: ${x(1920) - 1}px; width: ${x(L + 1) - x(1920) + 2}px; height: ${rowH + 0.5}px`;
+        markYear.style.cssText = `top: ${top}px; left: ${x(yr)}px; width: ${Math.max(2, x(yr + 1) - x(yr))}px; height: ${ORDER.length * rowH - 1.5}px`;
+        box.classList.add("hm-on");
         const c = ORDER[i], p = observed(c, yr);
         showTip(`<b>${esc(c.label)}</b><br><span class="num">${yr}</span>: ${esc(c.newWord)} <span class="num">${pct(p)}</span>, ${esc(c.oldWord)} <span class="num">${pct(1 - p)}</span>` +
                 (D.docs[ix(yr)] ? "" : "<br><i>bu yıldan oturum yok: çevredeki yıllar</i>"), ev);
     };
-    cv.onpointerleave = hideTip;
+    cv.onpointerleave = unmark;
     cv.onclick = ev => {
         const r = cv.getBoundingClientRect(), i = Math.floor((ev.clientY - r.top - top) / rowH);
         if(i >= 0 && i < ORDER.length) { hideTip(); showConcept(ORDER[i]); document.getElementById("kavram").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth"}); }
@@ -1634,11 +1677,25 @@ function drawDecades() {
         const cloud = html("div", {class: "cloud"}, card);
         const zMax = words.length ? words[0].z : 1;
         for(const w of words.slice(0, 11)) {
-            const b = html("button", {type: "button", style: `font-size: ${(0.95 + 0.95 * w.z / zMax).toFixed(2)}rem; color: var(${ORIGIN_VARS[w.o]})`}, cloud, w.w);
+            const b = html("button", {type: "button", "data-w": w.w, style: `font-size: ${(0.95 + 0.95 * w.z / zMax).toFixed(2)}rem; color: var(${ORIGIN_VARS[w.o]})`}, cloud, w.w);
             b.addEventListener("click", () => searchFor([w.w]));
             if(VOCAB.has(w.w)) withWordTip(b, VOCAB.get(w.w));
         }
     });
+    // Under the pointer, a word is marked in every decade it belongs to and the others fade:
+    // sayın runs from the 1970s to the 2010s. Between two words nothing changes for a moment.
+    const mark = word => {
+        box.classList.toggle("dim", word !== null);
+        box.querySelectorAll(".cloud button").forEach(b => b.classList.toggle("same", b.dataset.w === word));
+    };
+    let timer = 0;
+    box.addEventListener("pointerover", ev => {
+        const b = ev.target.closest(".cloud button");
+        clearTimeout(timer);
+        if(b) mark(b.dataset.w);
+        else timer = setTimeout(() => mark(null), 150);
+    });
+    box.addEventListener("pointerleave", () => { clearTimeout(timer); mark(null); });
 }
 
 // ---------------------------------------------------------------- ranking
@@ -1810,12 +1867,12 @@ function drawSearch() {
     }
     yearAxis(s, x, top, top + h, narrow ? 20 : 10);
     eventLines(s, x, top, top + h, !narrow);
-    const ends = [];
+    const ends = [], mark = periodMarker(s, x, top, h);
     series.forEach((vals, k) => {
         const col = css(`--w${k + 1}`), pts = bins.map((b, i) => [x(b + 2), y(vals[i])]);
         if(series.length === 1) svg("path", {d: path(pts) + `L${pts[pts.length - 1][0]},${y(0)}L${pts[0][0]},${y(0)}Z`, fill: col, opacity: 0.12}, s);
         svg("path", {d: path(pts), fill: "none", stroke: col, "stroke-width": 3, "stroke-linejoin": "round"}, s);
-        pts.forEach(([px, py]) => svg("circle", {cx: px, cy: py, r: 3.5, fill: col}, s));
+        pts.forEach(([px, py], i) => mark.add(bins[i], svg("circle", {cx: px, cy: py, r: 3.5, fill: col}, s)));
         ends.push({k, y: pts[pts.length - 1][1], col});
     });
     if(!narrow) {
@@ -1824,17 +1881,16 @@ function drawSearch() {
         ends.forEach(e => svg("text", {x: w - right + 10, y: e.y + 5, "font-size": 15, "font-weight": 700, style: `fill: ${e.col}`}, s).textContent = SEARCH.words[e.k]);
     }
     svg("text", {x: 56, y: top - (narrow ? 10 : 72), "font-size": 12}, s).textContent = "milyon sözcükte kaç kez (beş yıllık dönemler)";
-    const line = svg("line", {y1: top, y2: top + h, stroke: css("--ink"), opacity: 0}, s);
     const hover = svg("rect", {x: 56, y: top, width: w - right - 56, height: h, fill: "transparent"}, s);
     hover.addEventListener("pointermove", ev => {
         const r = s.getBoundingClientRect(), yr = x.invert(ev.clientX - r.left);
         let bi = 0;
         bins.forEach((b, i) => { if(Math.abs(b + 2 - yr) < Math.abs(bins[bi] + 2 - yr)) bi = i; });
-        line.setAttribute("x1", x(bins[bi] + 2)); line.setAttribute("x2", x(bins[bi] + 2)); line.setAttribute("opacity", 0.4);
+        mark.show(bins[bi]);
         showTip(`<b>${bins[bi]}–${bins[bi] + 4}</b><br><i>milyon sözcükte</i>` + SEARCH.words.map((word, k) =>
             `<br><span class="dot" style="background: var(--w${k + 1})"></span>${esc(word)} <span class="num">${nf.format(Math.round(series[k][bi]))}</span>`).join(""), ev);
     });
-    hover.addEventListener("pointerleave", () => { hideTip(); line.setAttribute("opacity", 0); });
+    hover.addEventListener("pointerleave", () => { hideTip(); mark.hide(); });
 }
 
 // ---------------------------------------------------------------- dating a text
