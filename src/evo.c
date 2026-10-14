@@ -702,28 +702,6 @@ static int cmdFit(char **argv) {
                mIn - mRest, p, p < 0.05 ? "  *" : "");
     }
     printf("  p: share of 20000 random reshuffles of the theme labels with at least as large a difference.\n");
-
-    // The steps back after 1952, the largest first.
-    int order[256], nRev = 0;
-    for(int i = 0; i < s->nConcepts && nRev < 256; i++) if(s->concepts[i].reversal.found) order[nRev++] = i;
-    for(int i = 1; i < nRev; i++) {   // insertion sort by the size of the drop
-        for(int j = i; j > 0; j--) {
-            const Reversal *a = &s->concepts[order[j]].reversal, *b = &s->concepts[order[j - 1]].reversal;
-            if(a->before - a->after <= b->before - b->after) break;
-            int t = order[j]; order[j] = order[j - 1]; order[j - 1] = t;
-        }
-    }
-    printf("\nreversals: today's word lost at least %.0f points after 1952 (%d of %d meanings)\n",
-           100 * REVERSAL_MIN_DROP, nRev, s->nConcepts);
-    for(int k = 0; k < nRev; k++) {
-        const ConceptStudy *c = &s->concepts[order[k]];
-        const Reversal *r = &c->reversal;
-        printf("  ");
-        printPadded(c->label, 34);
-        printf("%3.0f%% (%d) -> %3.0f%% (%d)", 100 * r->before, r->beforeYear, 100 * r->after, r->lowYear);
-        if(r->backYear) printf("   back in %d\n", r->backYear);
-        else printf("   never back\n");
-    }
     printf("\ncrossover: the year today's word passed half of the uses; 10→90%%: how long the change took;\n"
            "ceiling: the share it levels off at. Intervals from %d bootstrap rounds over sittings. Written to %s\n", 300, argv[2]);
     freeStudy(s);

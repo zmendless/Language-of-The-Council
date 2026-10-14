@@ -79,8 +79,6 @@ It also rejoins hyphenated words, reads the date (including the Ottoman calendar
 - **Vocabulary origin.** Each noun and adjective in the corpus gets the origin Wiktionary gives it.
   - A word built with a Turkish suffix takes its root's origin, so *kitapçı* counts as Arabic.
   - Function words (*ve, ama, her*) are left out: many are Arabic or Persian, but they were never replaced.
-- **Reversals.** In 1952 the constitution was put back into its 1924 wording, and the parliament's words went back too. For every meaning, `findReversal` takes the highest share of today's word in 1940–1951 and the lowest in 1952–1965 (the smoothed shares of the time machine). A reversal counts when the new word had at least 20% and lost at least 10 points. `evo fit` lists them by size of the drop.
-  - **Small sample:** 39 of 78 meanings stepped back. *inikat → birleşim* fell from 99% (1949) to 1% (1958) and was back only in 1968; *zabıt → tutanak* not until 2001.
 - **The age of a text.** Every five years has its own word frequencies (*sene* in 1925, *yıl* in 2015). `evo date` guesses when a text was spoken from its words alone: a naive Bayes classifier that adds up, word by word, how much likelier the word is in one period than in another. It uses only the 20,000 most used dictionary word forms, not names, so it reads the language and not the ministers of the day.
   - **The test** (`evo datetest`): every sitting is dated with its whole volume taken out of the model, since sittings of one volume are days apart and share their topics.
   - **Results on the small sample:** off by 4.3 years on average for a whole sitting, 4.9 for 200 words and 10.4 for 20 words (one sentence). Always guessing the middle year would be off by 24.1.
@@ -101,7 +99,6 @@ It also rejoins hyphenated words, reads the date (including the Ottoman calendar
 | Sözcüklerin ömrü (`omur`) | Of the 300 most used nouns and adjectives of the 1920s, how many are still in use in each later decade, Arabic against Turkish; with the words that vanished and the Arabic and Persian ones that held on, each with its own curve |
 | On yılların sözcükleri (`onyillar`) | The words most typical of each decade against all the others. History shows through: agriculture in the 1960s, martial law in the 1970s, terror in the 2010s |
 | En çok kullanılanlar (`siralama:1950`) | Animated: the 12 most used nouns and adjectives of each year as racing bars, coloured by origin. `make video` |
-| Geri dönüşler (`donusler`) | Every meaning whose new word stepped back after 1952: its highest share before, its lowest after, and the year it was back; the six largest as curves |
 | Metnin yaşı (`tarih`) | How well a text's years are guessed from its words: error by text length against guessing without reading, and every sitting's true year against its guess |
 | Sözcük ara (any words, comma separated) | Frequency per million words. Several words are compared on one chart, e.g. `efendi, muhterem, sayın, değerli` (how MPs addressed each other) |
 
@@ -123,6 +120,10 @@ The time machine shows the observed shares (smoothed over a few years), not the 
   - charts over time sweep in from left to right the first time they are seen, and the time machine starts by itself;
   - with the system's "reduce motion" setting, or with `#durgun` at the end of the address, nothing moves.
 - **A light/dark switch** in the navigation bar.
+- **Smooth scrolling:**
+  - the menu's links glide to their chapter, and on a phone the menu keeps the current chapter's link in view;
+  - the time machine, the ranking and the first screen's animation pause while scrolled out of view and go on when they come back;
+  - the bars move with transforms, so a frame never has to lay out the page again.
 
 ![races](docs/yarislar.png)
 

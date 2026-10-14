@@ -57,17 +57,6 @@ double permutationTest(const double *a, int na, const double *b, int nb, int rou
 
 #define MAX_COMPETITORS 4
 
-// A step back: after the 1952 return of the constitution to its old wording, today's word
-// lost ground in many meanings. The highest share before 1952 and the lowest after it.
-#define REVERSAL_MIN_SHARE 0.2f   // the new word had at least this share before
-#define REVERSAL_MIN_DROP 0.1f    // and lost at least this much (10 points)
-typedef struct {
-    bool found;
-    float before;     // highest share of today's word, 1940-1951
-    float after;      // lowest share, 1952-1965
-    int beforeYear, lowYear;
-    int backYear;     // first year from lowYear on with the share back at `before` (0: never)
-} Reversal;
 // One meaning and its competing words, counted and fitted.
 typedef struct {
     char concept[MAX_WORD];
@@ -79,7 +68,6 @@ typedef struct {
     YearCounts counts[MAX_COMPETITORS];
     ConceptUses uses;
     Fit fit;
-    Reversal reversal;                      // its step back after 1952 (findReversal)
 } ConceptStudy;
 
 // The share of today's word around a year, from the counts themselves: a window that
@@ -89,7 +77,6 @@ typedef struct {
 float observedAt(const ConceptStudy *c, int year);
 float observedShare(const ConceptStudy *c, float year);
 
-void findReversal(const ConceptStudy *c, Reversal *out);
 
 // Where words came from, by year, among nouns and adjectives (function words such as
 // ve, ama, her are Arabic or Persian too, but they were never replaced).

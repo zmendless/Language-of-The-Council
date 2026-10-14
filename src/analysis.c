@@ -206,23 +206,6 @@ float observedShare(const ConceptStudy *c, float year) {
     return observedAt(c, y0) * (1 - t) + observedAt(c, y0 + 1) * t;
 }
 
-void findReversal(const ConceptStudy *c, Reversal *out) {
-    memset(out, 0, sizeof *out);
-    for(int y = 1940; y <= 1951; y++) {
-        float p = observedAt(c, y);
-        if(p > out->before) { out->before = p; out->beforeYear = y; }
-    }
-    out->after = 1;
-    for(int y = 1952; y <= 1965; y++) {
-        float p = observedAt(c, y);
-        if(p < out->after) { out->after = p; out->lowYear = y; }
-    }
-    out->found = out->before >= REVERSAL_MIN_SHARE && out->before - out->after >= REVERSAL_MIN_DROP;
-    for(int y = out->lowYear; out->found && y <= 2023; y++) {
-        if(observedAt(c, y) >= out->before) { out->backYear = y; break; }
-    }
-}
-
 double median(double *values, int n) {
     if(n == 0) return NAN;
     qsort(values, n, sizeof *values, compareDoubles);
@@ -765,7 +748,6 @@ Study *loadStudy(sqlite3 *db, const char *conceptsPath, int bootstrapRounds) {
         }
         fitLogistic(c->uses.newUses, c->uses.allUses, NYEARS, FIRST_YEAR, &c->fit);
         bootstrapFit(&c->uses, bootstrapRounds, (uint64_t)(s->nConcepts * 7919), &c->fit);
-        findReversal(c, &c->reversal);
     }
     sqlite3_finalize(stmt);
     free(newPer);

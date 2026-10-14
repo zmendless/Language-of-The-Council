@@ -398,27 +398,6 @@ static void testDatingModel(void) {
     CHECK(fabs(year - 1967) < 1 && spread > 40);   // used alike in both: tells nothing
 }
 
-// The new word at 90% in the 1940s, 10% from 1952 to 1960, then 90% again: a reversal
-// that is over by the mid-1960s. A steady 90% is none.
-static void testReversal(void) {
-    static ConceptStudy dip, steady;
-    memset(&dip, 0, sizeof dip);
-    memset(&steady, 0, sizeof steady);
-    for(int y = 1930; y <= 2000; y++) {
-        int i = y - FIRST_YEAR;
-        dip.uses.allUses[i] = steady.uses.allUses[i] = 100;
-        dip.uses.newUses[i] = y >= 1952 && y <= 1960 ? 10 : 90;
-        steady.uses.newUses[i] = 90;
-    }
-    Reversal r;
-    findReversal(&dip, &r);
-    CHECK(r.found && r.before > 0.85f && r.after < 0.15f);
-    CHECK(r.lowYear >= 1955 && r.lowYear <= 1957);   // the middle of the dip, where the window holds only dip years
-    CHECK(r.backYear >= 1962 && r.backYear <= 1966);
-    findReversal(&steady, &r);
-    CHECK(!r.found);
-}
-
 int main(void) {
     testFold();
     testTokens();
@@ -429,7 +408,6 @@ int main(void) {
     testAnalysis();
     testVocabulary();
     testDatingModel();
-    testReversal();
     printf("%d checks, %d failed\n", checks, failures);
     return failures ? 1 : 0;
 }
