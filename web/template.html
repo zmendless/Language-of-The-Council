@@ -37,6 +37,8 @@
     --step-2: 1.6rem;
     --step-3: 2.3rem;
     --step-4: clamp(2.8rem, 8vw, 5.4rem);
+    --shadow: 0 1px 2px rgba(23, 32, 44, 0.04), 0 12px 32px -20px rgba(23, 32, 44, 0.22);
+    --shadow-up: 0 2px 4px rgba(23, 32, 44, 0.05), 0 18px 40px -20px rgba(23, 32, 44, 0.3);
 }
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -46,6 +48,8 @@
         --th-meclis: #9586dc; --th-devlet: #e4668b; --th-genel: #2bb7b7; --th-egitim: #eda04a;
         --sepia: #2e2717;
         --w1: #3d9be0; --w2: #f07a2e; --w3: #25b98b; --w4: #dc8fbb; --w5: #f0b232;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -20px rgba(0, 0, 0, 0.7);
+        --shadow-up: 0 2px 4px rgba(0, 0, 0, 0.35), 0 18px 40px -20px rgba(0, 0, 0, 0.8);
         color-scheme: dark;
     }
 }
@@ -56,12 +60,15 @@
     --th-meclis: #9586dc; --th-devlet: #e4668b; --th-genel: #2bb7b7; --th-egitim: #eda04a;
     --sepia: #2e2717;
     --w1: #3d9be0; --w2: #f07a2e; --w3: #25b98b; --w4: #dc8fbb; --w5: #f0b232;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -20px rgba(0, 0, 0, 0.7);
+    --shadow-up: 0 2px 4px rgba(0, 0, 0, 0.35), 0 18px 40px -20px rgba(0, 0, 0, 0.8);
     color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 html { overscroll-behavior-y: none; }
 body {
+    margin: 0;   /* the time machine's paper and the menu's lines reach the window's edges */
     background: var(--bg);
     color: var(--ink);
     font: 400 var(--step-0)/1.55 var(--body);
@@ -76,6 +83,7 @@ p { margin: 0; }
 a { color: var(--new); }
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--new); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--new) 24%, transparent); }
 .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .eyebrow { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 
@@ -141,7 +149,7 @@ button, input, select { font: inherit; color: inherit; }
 .chapter .head .eyebrow { color: var(--new); }
 .intro { color: var(--muted); max-width: 68ch; }
 .intro b { color: var(--ink); }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; box-shadow: var(--shadow); }
 .chart { position: relative; width: 100%; min-width: 0; }
 .chart svg, .chart canvas { display: block; width: 100%; }
 .note { font-size: 0.88rem; color: var(--faint); margin-top: 10px; }
@@ -152,7 +160,29 @@ button, input, select { font: inherit; color: inherit; }
 }
 .btn:hover { border-color: var(--faint); }
 .btn.primary { background: var(--new); border-color: var(--new); color: #fff; min-width: 96px; }
-.slider { flex: 1 1 260px; accent-color: var(--new); }
+.btn.primary:hover { filter: brightness(1.08); }
+/* The year sliders: a thin track filled up to the year shown, and under it a tick for each
+   reform date that turns red once the year has passed it. The thumb's centre runs from 10px
+   to 10px before the end, so the ticks sit in the same span. */
+.scrub { flex: 1 1 260px; position: relative; }
+.slider { --fill: 0%; display: block; width: 100%; height: 26px; margin: 0; background: none; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.slider::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--new) var(--fill), var(--line) 0); }
+.slider::-moz-range-track { height: 6px; border-radius: 3px; background: var(--line); }
+.slider::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--new); }
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none; box-sizing: border-box; width: 20px; height: 20px; margin-top: -7px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--new); box-shadow: var(--shadow); transition: transform 0.15s;
+}
+.slider::-moz-range-thumb {
+    box-sizing: border-box; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--new); box-shadow: var(--shadow); transition: transform 0.15s;
+}
+.slider:hover::-webkit-slider-thumb, .slider:active::-webkit-slider-thumb { transform: scale(1.15); }
+.slider:hover::-moz-range-thumb, .slider:active::-moz-range-thumb { transform: scale(1.15); }
+.slider:focus-visible { outline-offset: 4px; border-radius: 4px; }
+.ticks { position: absolute; left: 10px; right: 10px; top: 19px; height: 7px; pointer-events: none; }
+.ticks i { position: absolute; top: 0; width: 2px; height: 7px; margin-left: -1px; border-radius: 1px; background: var(--faint); opacity: 0.55; transition: background-color 0.3s, opacity 0.3s; }
+.ticks i.past { background: var(--old); opacity: 1; }
 .bigyear { font-family: var(--display); font-weight: 800; font-size: var(--step-3); line-height: 1; min-width: 3.2ch; }
 .event { color: var(--old); font-weight: 700; }
 .event small { display: block; color: var(--muted); font-weight: 400; font-size: 0.9rem; }
@@ -189,6 +219,10 @@ button, input, select { font: inherit; color: inherit; }
 .side .sub { font-size: 0.88rem; color: var(--muted); margin: -6px 0 10px; }
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 0.98rem; }
 .kv .v { font-family: var(--mono); font-weight: 500; text-align: right; }
+/* How far the new word got, drawn like a time machine bar: red, then blue for its best share. */
+.meter { display: inline-block; width: 56px; height: 6px; border-radius: 3px; margin-right: 10px; vertical-align: 2px;
+    background: linear-gradient(90deg, var(--old) calc(100% - var(--p, 0%)), var(--new) 0); }
+.kv .pc { display: inline-block; min-width: 2.6em; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
 
 /* concept detail */
@@ -215,7 +249,8 @@ button, input, select { font: inherit; color: inherit; }
 
 /* decades */
 .decades { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 14px; }
-.decade { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 16px; }
+.decade { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px 16px; box-shadow: var(--shadow); transition: box-shadow 0.25s, border-color 0.25s; }
+.decade:hover { box-shadow: var(--shadow-up); border-color: color-mix(in srgb, var(--faint) 60%, var(--line)); }
 .decade header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .decade header h3 { font-size: 1.45rem; }
 .decade header span { font: 0.78rem var(--mono); color: var(--faint); }
@@ -253,6 +288,7 @@ button, input, select { font: inherit; color: inherit; }
 .fact .card {
     max-width: 780px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 8px 24px; align-items: center;
     background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--fact-accent, var(--new)); border-radius: 10px; padding: 18px 22px;
+    box-shadow: var(--shadow);
 }
 .fact .eyebrow { grid-column: 1 / -1; color: var(--fact-accent, var(--new)); }
 .fact p { font: 700 clamp(1.15rem, 2.4vw, 1.45rem)/1.35 var(--display); }
@@ -295,14 +331,15 @@ button, input, select { font: inherit; color: inherit; }
 .method h3 { margin-bottom: 6px; }
 .method p { color: var(--muted); }
 footer { padding-block: 48px 64px; color: var(--faint); font-size: 0.9rem; }
+footer::before { content: ""; display: block; height: 1px; background: var(--line); margin-bottom: 24px; }
 
 /* tooltip */
 .tip {
     position: fixed; z-index: 50; pointer-events: none; background: var(--ink); color: var(--bg);
     padding: 9px 12px; border-radius: 8px; font-size: 0.9rem; line-height: 1.45; max-width: 280px;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.18); opacity: 0; transition: opacity 0.12s;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.18); opacity: 0; transform: translateY(3px); transition: opacity 0.12s, transform 0.12s;
 }
-.tip.on { opacity: 1; }
+.tip.on { opacity: 1; transform: none; }
 .tip b { font-family: var(--display); font-size: 1.05rem; }
 .tip .num { font-size: 0.85rem; }
 
@@ -401,7 +438,7 @@ svg .label { fill: var(--ink); }
             </div>
             <div class="controls">
                 <button class="btn primary" id="tm-play" type="button">Oynat</button>
-                <input class="slider" id="tm-year" type="range" min="1920" max="2023" step="1" value="1920" aria-label="Yıl">
+                <div class="scrub"><input class="slider" id="tm-year" type="range" min="1920" max="2023" step="1" value="1920" aria-label="Yıl"></div>
             </div>
             <div class="tm-top">
                 <div class="bigyear num" id="tm-big">1920</div>
@@ -523,7 +560,7 @@ svg .label { fill: var(--ink); }
             </div>
             <div class="controls">
                 <button class="btn primary" id="race-play" type="button">Oynat</button>
-                <input class="slider" id="race-year" type="range" min="1920" max="2023" step="0.01" value="1920" aria-label="Yıl">
+                <div class="scrub"><input class="slider" id="race-year" type="range" min="1920" max="2023" step="0.01" value="1920" aria-label="Yıl"></div>
             </div>
             <div class="tm-top">
                 <div class="bigyear num" id="race-big">1920</div>
@@ -856,6 +893,18 @@ function showTip(htmlText, ev) {
 function hideTip() { tip.classList.remove("on"); }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 
+// The reform dates as ticks under a year slider. Returns the function that shows a year on
+// it: the track fills up to it and the dates already passed turn red.
+function sliderTicks(slider) {
+    const box = html("div", {class: "ticks", "aria-hidden": "true"}, slider.parentNode);
+    const at = y => (y - slider.min) / (slider.max - slider.min);
+    const ticks = EVENTS.map(e => html("i", {style: `left: ${(at(e.y) * 100).toFixed(2)}%`}, box));
+    return t => {
+        slider.style.setProperty("--fill", (clamp(at(t), 0, 1) * 100).toFixed(2) + "%");
+        EVENTS.forEach((e, k) => ticks[k].classList.toggle("past", t >= e.y));
+    };
+}
+
 function legend(container) {
     container.textContent = "";
     ORIGINS.forEach((name, g) => {
@@ -963,6 +1012,7 @@ function setupTimeMachine() {
         TM.rows.push({c, o, n, fill, shown: NaN, target: 0});
     }
     const slider = document.getElementById("tm-year"), play = document.getElementById("tm-play");
+    TM.mark = sliderTicks(slider);
     slider.addEventListener("input", () => { TM.playing = false; play.textContent = "Oynat"; drawTimeMachine(+slider.value); });
     play.addEventListener("click", () => {
         TM.playing = !TM.playing;
@@ -988,6 +1038,7 @@ function drawTimeMachine(t) {
     TM.year = t;
     const y = Math.floor(t);
     document.getElementById("tm-year").value = y;
+    TM.mark(t);
     document.getElementById("tm-big").textContent = y;
     const ev = eventAround(t), evBox = document.getElementById("tm-event");
     if(ev) evBox.innerHTML = `${ev.y} · ${esc(ev.label)}<small>${esc(ev.detail)}</small>`;   // the last one stays, faded out
@@ -1105,11 +1156,14 @@ function drawTimeline() {
 function drawTimelineSide() {
     const failed = ORDER.filter(c => !c.crossed);
     const fb = document.getElementById("failed");
-    fb.innerHTML = `<h3 style="color: var(--old)">Tutmayanlar</h3><p class="sub">eski sözcük hâlâ önde</p>`;
+    fb.innerHTML = `<h3 style="color: var(--old)">Tutmayanlar</h3><p class="sub">eski sözcük hâlâ önde; mavi: yeni sözcüğün en yüksek payı</p>`;
     const kv = html("div", {class: "kv"}, fb);
     for(const c of failed) {
         html("span", {}, kv, c.label);
-        html("span", {class: "v", style: "color: var(--old)"}, kv, c.fit.status === 3 ? "veri az" : "en çok " + pct(c.fit.ceiling));
+        const v = html("span", {class: "v", style: "color: var(--muted)"}, kv);
+        if(c.fit.status === 3) { v.textContent = "veri az"; continue; }
+        html("i", {class: "meter", style: `--p: ${(c.fit.ceiling * 100).toFixed(1)}%`}, v);
+        html("span", {class: "pc"}, v, pct(c.fit.ceiling));
     }
     const tb = document.getElementById("themes");
     tb.innerHTML = `<h3>Temalar</h3><p class="sub">ortanca geçiş yılı; p: öteki temalardan farkın rastlantı olma olasılığı</p>`;
@@ -1514,6 +1568,7 @@ function setupRace() {
     const box = document.getElementById("race");
     box.style.height = RACE.rows * RACE.rowH + "px";
     const slider = document.getElementById("race-year"), play = document.getElementById("race-play");
+    RACE.mark = sliderTicks(slider);
     slider.addEventListener("input", () => { RACE.playing = false; play.textContent = "Oynat"; drawRace(+slider.value); });
     play.addEventListener("click", () => {
         RACE.playing = !RACE.playing;
@@ -1539,6 +1594,7 @@ function drawRace(t) {
     RACE.year = t;
     const tops = raceTops(), y0 = Math.floor(t), y1 = Math.min(L, y0 + 1), f = t - y0, ease = f * f * (3 - 2 * f);
     document.getElementById("race-year").value = t;
+    RACE.mark(t);
     document.getElementById("race-big").textContent = y0;
     const ev = eventAround(t);
     document.getElementById("race-event").innerHTML = ev ? `${ev.y} · ${esc(ev.label)}<small>${esc(ev.detail)}</small>` : "";
