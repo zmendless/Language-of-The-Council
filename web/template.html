@@ -137,6 +137,10 @@ button, input, select { font: inherit; color: inherit; }
 .bigyear { font-family: var(--display); font-weight: 800; font-size: var(--step-3); line-height: 1; min-width: 3.2ch; }
 .event { color: var(--old); font-weight: 700; }
 .event small { display: block; color: var(--muted); font-weight: 400; font-size: 0.9rem; }
+/* The time machine's event keeps its room (a label and two lines of detail) when there is
+   none, so that the chart below does not jump; it fades in and out instead. */
+#tm-event { min-height: calc(1.55em + 2 * 1.55 * 0.9rem); transition: opacity 0.3s; }
+#tm-event.off { opacity: 0; }
 
 /* time machine */
 .tm-top { display: grid; grid-template-columns: auto 1fr; gap: 6px 20px; align-items: center; margin-bottom: 14px; }
@@ -852,7 +856,7 @@ function setupTimeMachine() {
         const fill = html("b", {}, bar);
         const n = html("span", {class: "n"}, b, c.newWord);
         b.addEventListener("click", () => { showConcept(c); document.getElementById("kavram").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth"}); });
-        TM.rows.push({c, o, n, fill});
+        TM.rows.push({c, o, n, fill, shown: NaN, target: 0});
     }
     const slider = document.getElementById("tm-year"), play = document.getElementById("tm-play");
     slider.addEventListener("input", () => { TM.playing = false; play.textContent = "Oynat"; drawTimeMachine(+slider.value); });
@@ -881,16 +885,15 @@ function drawTimeMachine(t) {
     const y = Math.floor(t);
     document.getElementById("tm-year").value = y;
     document.getElementById("tm-big").textContent = y;
-    const ev = eventAround(t);
-    document.getElementById("tm-event").innerHTML = ev ? `${ev.y} · ${esc(ev.label)}<small>${esc(ev.detail)}</small>` : "";
+    const ev = eventAround(t), evBox = document.getElementById("tm-event");
+    if(ev) evBox.innerHTML = `${ev.y} · ${esc(ev.label)}<small>${esc(ev.detail)}</small>`;   // the last one stays, faded out
+    evBox.classList.toggle("off", !ev);
     let ahead = 0;
     for(const r of TM.rows) {
-        const p = observedShare(r.c, t);
-        ahead += p > 0.5;
-        r.fill.style.width = (p * 100).toFixed(1) + "%";
-        r.o.classList.toggle("lead", p <= 0.5);
-        r.n.classList.toggle("lead", p > 0.5);
+        r.target = observedShare(r.c, t);
+        ahead += r.target > 0.5;
     }
+    easeBars();
     document.getElementById("tm-count").textContent = `${D.concepts.length} kavramın ${ahead} tanesinde yeni sözcük önde`;
     const shares = originShares(t), bar = document.getElementById("tm-origin");
     if(shares) {
@@ -902,6 +905,37 @@ function drawTimeMachine(t) {
             s.title = `${ORIGINS[g]} ${pct(shares[g])}`;
         });
     }
+}
+
+// The bars glide to their new shares instead of jumping: a single year's counts can be
+// noisy, and the slider can move many years at once.
+function easeBars() {
+    const show = r => {
+        r.fill.style.width = (r.shown * 100).toFixed(2) + "%";
+        r.o.classList.toggle("lead", r.shown <= 0.5);
+        r.n.classList.toggle("lead", r.shown > 0.5);
+    };
+    if(reduceMotion || TM.rows.some(r => isNaN(r.shown))) {   // the first drawing does not move
+        for(const r of TM.rows) { r.shown = r.target; show(r); }
+        return;
+    }
+    if(TM.easing) return;
+    TM.easing = true;
+    let last = performance.now();
+    const step = now => {
+        const k = 1 - Math.exp(-(now - last) / 160);   // closes most of the gap in a fifth of a second
+        last = now;
+        let moving = false;
+        for(const r of TM.rows) {
+            r.shown += (r.target - r.shown) * k;
+            if(Math.abs(r.target - r.shown) < 0.0005) r.shown = r.target;
+            else moving = true;
+            show(r);
+        }
+        if(moving) requestAnimationFrame(step);
+        else TM.easing = false;
+    };
+    requestAnimationFrame(step);
 }
 
 // ---------------------------------------------------------------- timeline
