@@ -39,6 +39,7 @@
     --step-4: clamp(2.8rem, 8vw, 5.4rem);
     --shadow: 0 1px 2px rgba(23, 32, 44, 0.04), 0 12px 32px -20px rgba(23, 32, 44, 0.22);
     --shadow-up: 0 2px 4px rgba(23, 32, 44, 0.05), 0 18px 40px -20px rgba(23, 32, 44, 0.3);
+    --grain-strength: 0.35;
 }
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -50,6 +51,7 @@
         --w1: #3d9be0; --w2: #f07a2e; --w3: #25b98b; --w4: #dc8fbb; --w5: #f0b232;
         --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -20px rgba(0, 0, 0, 0.7);
         --shadow-up: 0 2px 4px rgba(0, 0, 0, 0.35), 0 18px 40px -20px rgba(0, 0, 0, 0.8);
+    --grain-strength: 0.12;
         color-scheme: dark;
     }
 }
@@ -62,6 +64,7 @@
     --w1: #3d9be0; --w2: #f07a2e; --w3: #25b98b; --w4: #dc8fbb; --w5: #f0b232;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -20px rgba(0, 0, 0, 0.7);
     --shadow-up: 0 2px 4px rgba(0, 0, 0, 0.35), 0 18px 40px -20px rgba(0, 0, 0, 0.8);
+    --grain-strength: 0.12;
     color-scheme: dark;
 }
 
@@ -343,8 +346,13 @@ button, input, select { font: inherit; color: inherit; }
 .voice.in { animation: voiceIn 0.5s ease both; }
 @keyframes voiceIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-/* ageing paper: the time machine's chapter is yellowed in the 1920s and white today */
-#zaman { background: color-mix(in srgb, var(--sepia) var(--age, 0%), var(--bg)); }
+/* ageing paper: the time machine's chapter is yellowed in the 1920s and white today, and its
+   grain (a noise texture behind the content) fades with the yellow: --grain goes 1 to 0. */
+#zaman { background: color-mix(in srgb, var(--sepia) var(--age, 0%), var(--bg)); position: relative; isolation: isolate; }
+#zaman::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: calc(var(--grain, 0) * var(--grain-strength)); will-change: opacity;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.27 0 0 0 0 0.12 1.3 0 0 0 -0.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
 
 /* dating a text */
 .era-legend { margin-top: 12px; align-items: center; }
@@ -1197,7 +1205,9 @@ function drawTimeMachine(t) {
     voiceOfYear(t);
     if(y !== TM.agedYear) {   // the paper yellows back in time: full in 1920, none from 1985
         TM.agedYear = y;
-        document.getElementById("zaman").style.setProperty("--age", (clamp((1985 - y) / 65, 0, 1) * 55).toFixed(1) + "%");
+        const age = clamp((1985 - y) / 65, 0, 1), zaman = document.getElementById("zaman");
+        zaman.style.setProperty("--age", (age * 55).toFixed(1) + "%");
+        zaman.style.setProperty("--grain", age.toFixed(3));
     }
     document.getElementById("tm-count").textContent = `${D.concepts.length} kavramın ${ahead} tanesinde yeni sözcük önde`;
     const shares = originShares(t), bar = document.getElementById("tm-origin");
@@ -2105,6 +2115,7 @@ function typicalError(n) {
     t.len.forEach((len, j) => { if(len && Math.abs(Math.log(len / n)) < Math.abs(Math.log(t.len[k] / n))) k = j; });
     return t.err[k];
 }
+let lastGuess = null;   // the period guessed last time
 function dateText() {
     const text = document.getElementById("d-text").value, out = document.getElementById("d-out");
     const tokens = tokenize(text), known = tokens.filter(t => FORM.has(t.w));
@@ -2117,6 +2128,9 @@ function dateText() {
     }
     const {best} = dateForms(known.map(t => FORM.get(t.w)));
     out.innerHTML = `<div class="guess">${binName(best)}</div><p>${tokens.length} sözcükten ${known.length} tanesini tanıyor. Bu uzunluktaki metinlerde ortalama ${nf.format(typicalError(known.length))} yıl yanılıyor.</p>`;
+    if(lastGuess !== null && best !== lastGuess && !STILL)   // a new guess settles in
+        out.firstChild.animate([{opacity: 0, transform: "translateY(8px)"}, {opacity: 1, transform: "none"}], {duration: 450, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)"});
+    lastGuess = best;
     // Each telling word once, the most telling first.
     const seen = new Set(), words = [];
     for(const t of known) {
