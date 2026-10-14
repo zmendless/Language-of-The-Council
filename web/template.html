@@ -27,6 +27,7 @@
     --th-devlet: #be3a60;
     --th-genel: #00898a;
     --th-egitim: #d6831a;
+    --sepia: #eadcbc;
     --w1: #0072b2; --w2: #d55e00; --w3: #009e73; --w4: #cc79a7; --w5: #e69f00;
     --display: "Alegreya", Georgia, "Times New Roman", serif;
     --body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
@@ -43,6 +44,7 @@
         --quote: #1a212b; --old: #e2714f; --new: #3d9be0; --proposal: #dc8fbb; --even: #3a3f48;
         --ar: #e2714f; --fa: #f0b232; --tr: #3d9be0; --we: #25b98b; --ot: #7d828d;
         --th-meclis: #9586dc; --th-devlet: #e4668b; --th-genel: #2bb7b7; --th-egitim: #eda04a;
+        --sepia: #2e2717;
         --w1: #3d9be0; --w2: #f07a2e; --w3: #25b98b; --w4: #dc8fbb; --w5: #f0b232;
         color-scheme: dark;
     }
@@ -52,6 +54,7 @@
     --quote: #1a212b; --old: #e2714f; --new: #3d9be0; --proposal: #dc8fbb; --even: #3a3f48;
     --ar: #e2714f; --fa: #f0b232; --tr: #3d9be0; --we: #25b98b; --ot: #7d828d;
     --th-meclis: #9586dc; --th-devlet: #e4668b; --th-genel: #2bb7b7; --th-egitim: #eda04a;
+    --sepia: #2e2717;
     --w1: #3d9be0; --w2: #f07a2e; --w3: #25b98b; --w4: #dc8fbb; --w5: #f0b232;
     color-scheme: dark;
 }
@@ -239,6 +242,38 @@ button, input, select { font: inherit; color: inherit; }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.92rem; color: var(--muted); }
 .msg { color: var(--old); font-size: 0.92rem; min-height: 1.4em; margin-top: 6px; }
 
+/* word curves in tooltips */
+.tip svg.spark { display: block; width: 220px; height: 44px; margin-top: 6px; }
+.tip .peak { font-size: 0.82rem; opacity: 0.8; }
+
+/* "Biliyor muydunuz?": one surprising number between chapters */
+.fact { display: block; padding-block: 28px 0; }
+.fact[hidden] { display: none; }
+.fact .card {
+    max-width: 780px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 8px 24px; align-items: center;
+    background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--fact-accent, var(--new)); border-radius: 10px; padding: 18px 22px;
+}
+.fact .eyebrow { grid-column: 1 / -1; color: var(--fact-accent, var(--new)); }
+.fact p { font: 700 clamp(1.15rem, 2.4vw, 1.45rem)/1.35 var(--display); }
+.fact p b { color: var(--fact-accent, var(--new)); }
+.fact .spark { width: 160px; height: 44px; }
+.fact .spark svg { display: block; width: 160px; height: 44px; }
+.fact .more { grid-column: 1 / -1; justify-self: start; background: none; border: 0; padding: 0; color: var(--muted); cursor: pointer; font-size: 0.92rem; }
+.fact .more:hover { color: var(--ink); }
+@media (max-width: 520px) { .fact .card { grid-template-columns: 1fr; } }
+
+/* voices of the year: a real sentence from about the year the time machine shows. Its room
+   is kept (three lines) so that nothing below it moves. */
+.voice { margin: 0 0 14px; min-height: calc(3 * 1.55em + 1.6em); font: 400 0.95rem/1.55 var(--mono); color: var(--muted); }
+.voice blockquote { margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.voice mark { background: none; font-weight: 500; border-bottom: 2px solid currentColor; padding: 0 1px; }
+.voice figcaption { font: 0.82rem var(--body); color: var(--faint); margin-top: 4px; }
+.voice.in { animation: voiceIn 0.5s ease both; }
+@keyframes voiceIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ageing paper: the time machine's chapter is yellowed in the 1920s and white today */
+#zaman { background: color-mix(in srgb, var(--sepia) var(--age, 0%), var(--bg)); }
+
 /* dating a text */
 .era-legend { margin-top: 12px; align-items: center; }
 .era-legend .ramp { display: inline-block; width: 160px; height: 10px; border-radius: 5px; vertical-align: -1px; margin-inline: 8px;
@@ -318,6 +353,7 @@ svg .label { fill: var(--ink); }
 }
 @media (prefers-reduced-motion: reduce) {
     .caret, .scroll-cue svg { animation: none; }
+    .voice.in { animation: none; }
     .morph, .morph-old, .morph-arrow { transition: none; }
     .reveal { opacity: 1; transform: none; }
     .sweep > svg, .sweep-down > svg { clip-path: none !important; animation: none !important; }
@@ -373,6 +409,7 @@ svg .label { fill: var(--ink); }
                     <div class="event" id="tm-event"></div>
                 </div>
             </div>
+            <figure class="voice" id="tm-voice" aria-live="off"></figure>
             <div>
                 <div class="eyebrow">İsim ve sıfatların kökeni</div>
                 <div class="originbar" id="tm-origin"></div>
@@ -381,6 +418,8 @@ svg .label { fill: var(--ink); }
             <div class="tm-rows" id="tm-rows"></div>
         </div>
     </section>
+
+    <aside class="fact wrap" id="fact-0" hidden></aside>
 
     <section class="chapter" id="takvim">
         <div class="wrap">
@@ -417,6 +456,8 @@ svg .label { fill: var(--ink); }
         </div>
     </section>
 
+    <aside class="fact wrap" id="fact-1" hidden></aside>
+
     <section class="chapter" id="parmakizi">
         <div class="wrap">
             <div class="head">
@@ -439,6 +480,8 @@ svg .label { fill: var(--ink); }
         </div>
     </section>
 
+    <aside class="fact wrap" id="fact-2" hidden></aside>
+
     <section class="chapter" id="omur">
         <div class="wrap">
             <div class="head">
@@ -455,6 +498,8 @@ svg .label { fill: var(--ink); }
             </div>
         </div>
     </section>
+
+    <aside class="fact wrap" id="fact-3" hidden></aside>
 
     <section class="chapter" id="onyillar">
         <div class="wrap">
@@ -487,6 +532,8 @@ svg .label { fill: var(--ink); }
             <div class="legend" id="race-legend" style="margin-top: 12px"></div>
         </div>
     </section>
+
+    <aside class="fact wrap" id="fact-4" hidden></aside>
 
     <section class="chapter" id="ara">
         <div class="wrap">
@@ -950,6 +997,11 @@ function drawTimeMachine(t) {
         ahead += r.target > 0.5;
     }
     easeBars();
+    voiceOfYear(t);
+    if(y !== TM.agedYear) {   // the paper yellows back in time: full in 1920, none from 1985
+        TM.agedYear = y;
+        document.getElementById("zaman").style.setProperty("--age", (clamp((1985 - y) / 65, 0, 1) * 55).toFixed(1) + "%");
+    }
     document.getElementById("tm-count").textContent = `${D.concepts.length} kavramın ${ahead} tanesinde yeni sözcük önde`;
     const shares = originShares(t), bar = document.getElementById("tm-origin");
     if(shares) {
@@ -992,6 +1044,29 @@ function easeBars() {
         else TM.easing = false;
     };
     requestAnimationFrame(step);
+}
+
+// Voices of the year: a real sentence from the transcripts, from about the year shown. While
+// playing it changes at most every few seconds, so that it can be read; its own year is shown.
+const VOICES = [...D.voices].sort((a, b) => a.y - b.y);   // a few from every five years (evo web)
+function voiceOfYear(t) {
+    const y = Math.floor(t), now = performance.now(), box = document.getElementById("tm-voice");
+    if(TM.voice && (Math.abs(TM.voice.y - y) <= 3 || (TM.playing && now - TM.voiceAt < 3200))) return;
+    const near = VOICES.filter(v => Math.abs(v.y - y) <= 3);
+    if(!near.length) return;
+    const v = near[(y * 7 + near.length) % near.length];
+    if(v === TM.voice) return;
+    TM.voice = v;
+    TM.voiceAt = now;
+    const roleVar = v.role === "old" ? "--old" : v.role === "proposal" ? "--proposal" : "--new";
+    const before = v.b.length > 90 ? "…" + v.b.slice(-90).replace(/^\S*\s/, "") : v.b;
+    const after = v.a.length > 90 ? v.a.slice(0, 90).replace(/\s\S*$/, "") + "…" : v.a;
+    box.innerHTML = `<blockquote>“${esc(before)}<mark style="color: var(${roleVar})">${esc(v.w)}</mark>${esc(after)}”</blockquote>` +
+                    `<figcaption>${v.y} · ${esc(sittingName(v.id))}</figcaption>`;
+    if(STILL) return;
+    box.classList.remove("in");
+    void box.offsetWidth;
+    box.classList.add("in");
 }
 
 // ---------------------------------------------------------------- timeline
@@ -1360,6 +1435,33 @@ function sparkline(container, i) {
     svg("path", {d: path(pts), fill: "none", stroke: col, "stroke-width": 1.6, "vector-effect": "non-scaling-stroke"}, s);
 }
 
+// ---------------------------------------------------------------- word curves in tooltips
+
+// A small curve as SVG markup: values over xs, NaN for gaps.
+function sparkSvg(xs, values, color) {
+    const w = 220, h = 44, ok = values.filter(v => !isNaN(v)), peak = Math.max(1e-9, ...ok);
+    const x = scale(xs[0], xs[xs.length - 1], 1, w - 1), y = scale(0, peak, h - 2, 3);
+    const pts = xs.map((v, k) => [x(v), isNaN(values[k]) ? NaN : y(values[k])]);
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${path(pts)}L${w - 1},${h}L1,${h}Z" fill="${color}" opacity="0.25"/>` +
+           `<path d="${path(pts)}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
+// A word's hundred years, for the tooltip: its curve and the decade it was used most.
+function wordTip(i) {
+    const r = wordRates(i);
+    let best = 0;
+    for(let d = 0; d < 11; d++) {
+        const v = sum(D.vocab.n[i], ix(1920 + 10 * d), ix(1929 + 10 * d)) / Math.max(1, sum(D.tokens, ix(1920 + 10 * d), ix(1929 + 10 * d)));
+        const b = sum(D.vocab.n[i], ix(1920 + 10 * best), ix(1929 + 10 * best)) / Math.max(1, sum(D.tokens, ix(1920 + 10 * best), ix(1929 + 10 * best)));
+        if(v > b) best = d;
+    }
+    return `<b>${esc(D.vocab.w[i])}</b> · ${ORIGINS[D.vocab.o[i]]}${sparkSvg(YEARS, Array.from(r), css(ORIGIN_VARS[D.vocab.o[i]]))}` +
+           `<span class="peak">1920 – ${L} · en çok ${decadeName(1920 + 10 * best, true)}</span>`;
+}
+function withWordTip(el, i) {
+    el.addEventListener("pointermove", ev => showTip(wordTip(i), ev));
+    el.addEventListener("pointerleave", hideTip);
+}
+
 // ---------------------------------------------------------------- decades
 
 function drawDecades() {
@@ -1376,6 +1478,7 @@ function drawDecades() {
         for(const w of words.slice(0, 11)) {
             const b = html("button", {type: "button", style: `font-size: ${(0.95 + 0.95 * w.z / zMax).toFixed(2)}rem; color: var(${ORIGIN_VARS[w.o]})`}, cloud, w.w);
             b.addEventListener("click", () => searchFor([w.w]));
+            if(VOCAB.has(w.w)) withWordTip(b, VOCAB.get(w.w));
         }
     });
 }
@@ -1450,7 +1553,7 @@ function drawRace(t) {
         let bar = RACE.bars.get(i);
         if(!bar) {
             const el = html("div", {class: "bar"}, box);
-            html("span", {class: "w"}, el, D.vocab.w[i]);
+            withWordTip(html("span", {class: "w"}, el, D.vocab.w[i]), i);
             const track = html("span", {class: "track"}, el);
             const fill = html("span", {class: "fill", style: `background: var(${ORIGIN_VARS[D.vocab.o[i]]})`}, track);
             const v = html("span", {class: "v"}, track);
@@ -1697,7 +1800,8 @@ function colorText(container, text, tokens) {
         span.style.color = col;
         span.style.fontWeight = info.strength > 0.5 ? 700 : 500;
         span.style.backgroundColor = `color-mix(in srgb, ${col} ${Math.round(info.strength * 16)}%, transparent)`;
-        span.addEventListener("pointermove", ev => showTip(`<b>${esc(t.w)}</b><br>en sık kullanıldığı dönem <span class="num">${binName(info.peak)}</span>`, ev));
+        const curve = DM.tok.map((n, b) => usable(b) ? (DM.c[FORM.get(t.w)][b] || 0) / n : NaN);
+        span.addEventListener("pointermove", ev => showTip(`<b>${esc(t.w)}</b>${sparkSvg(DM.tok.map((_, b) => binMiddle(b)), curve, col)}<span class="peak">en sık: ${binName(info.peak)}</span>`, ev));
         span.addEventListener("pointerleave", hideTip);
         at = t.end;
     }
@@ -1891,6 +1995,54 @@ function writeMethod() {
         `Kaynaklar: TBMM tutanakları (www5.tbmm.gov.tr), Vikisözlük (kaikki.org üzerinden, CC BY-SA). Bütün sayılar projenin C ile yazılmış analiz aracından (<span class="num">evo web</span>) geliyor: ${nf.format(D.sittings)} oturum, ${nf.format(D.words)} sözcük.`;
 }
 
+// ---------------------------------------------------------------- "Biliyor muydunuz?"
+
+// Surprising numbers from the data, one card between chapters. A fact the data cannot give
+// (a word missing from a smaller sample) is left out.
+function writeFacts() {
+    const facts = [];
+    const rateIn = (w, from, to) => {   // uses per million words of all forms of w in from..to
+        const i = VOCAB.get(w);
+        return i === undefined ? NaN : sum(D.vocab.s[i], ix(from), ix(to)) * 1e6 / Math.max(1, sum(D.tokens, ix(from), ix(to)));
+    };
+    const fastest = CROSSED.filter(c => c.fit.ok && !c.fit.uncertain && c.fit.duration > 0)
+        .sort((a, b) => a.fit.duration - b.fit.duration)[0];
+    if(fastest) facts.push({accent: "--new", concept: fastest,
+        text: `<b>${esc(fastest.oldWord)}</b> yerini <b>${esc(fastest.newWord)}</b> sözcüğüne yalnızca ${Math.round(fastest.fit.duration)} yılda bıraktı: listedeki en hızlı değişim.`});
+    const a = rateIn("efendi", 1920, 1933), b = rateIn("efendi", 1940, 1949);
+    if(a > 0 && b >= 0) facts.push({accent: "--old", word: "efendi",
+        text: `1920'lerde meclis her milyon sözcükte ${nf.format(Math.round(a))} kez <b>efendi</b> diyordu. Unvanlar 1934'te kaldırıldı; 1940'larda ${suffixed(nf.format(Math.round(b)), Math.round(b), "dat")} indi.`});
+    const lost = D.survival.lost[0];
+    if(lost) facts.push({accent: "--old", word: lost,
+        text: `<b>${esc(lost)}</b>, 1920'lerde meclisin en sık sözcüklerindendi. Bugün neredeyse hiç duyulmuyor.`});
+    const kept = D.survival.kept[0];
+    if(kept) facts.push({accent: "--fa", word: kept,
+        text: `Arapça ya da Farsça kökenli <b>${esc(kept)}</b>, 1920'lerin en sık sözcüklerindendi ve bugün de öyle: Dil Devrimi ona dokunamadı.`});
+    const stubborn = D.concepts.filter(c => !c.crossed && c.fit.status === 2)
+        .map(c => ({c, p: observed(c, 2020)})).sort((x, y) => x.p - y.p)[0];
+    if(stubborn) {
+        const old = Math.round(100 * (1 - stubborn.p));
+        facts.push({accent: "--old", concept: stubborn.c,
+            text: `Meclis bugün de <b>${esc(stubborn.c.oldWord)}</b> diyor, <b>${esc(stubborn.c.newWord)}</b> değil: 2020'lerde kullanımın ${suffixed("%" + old, old, "poss")} hâlâ eski sözcük.`});
+    }
+    facts.forEach((f, k) => {
+        const box = document.getElementById("fact-" + k);
+        if(!box) return;
+        box.hidden = false;
+        const card = html("div", {class: "card", style: `--fact-accent: var(${f.accent})`}, box);
+        html("span", {class: "eyebrow"}, card, "Biliyor muydunuz?");
+        html("p", {}, card).innerHTML = f.text;
+        const spark = html("div", {class: "spark"}, card);
+        if(f.word && VOCAB.has(f.word)) sparkline(spark, VOCAB.get(f.word));
+        else if(f.concept) spark.innerHTML = sparkSvg(YEARS, YEARS.map(y => observed(f.concept, y)), css("--new"));
+        const more = html("button", {class: "more", type: "button"}, card, "Grafikte görün →");
+        more.addEventListener("click", () => {
+            if(f.concept) { showConcept(f.concept); document.getElementById("kavram").scrollIntoView(); }
+            else searchFor([f.word], true);
+        });
+    });
+}
+
 // ---------------------------------------------------------------- motion
 
 // Plays each chart's entrance once, when it is first seen; with reduced motion, nothing moves.
@@ -1931,7 +2083,7 @@ function setupMotion() {
         return el;
     });
     if(STILL) return;
-    const rising = [...document.querySelectorAll(".chapter .head, .chapter .controls, .chapter .panel, .chapter .search, .decade")];
+    const rising = [...document.querySelectorAll(".chapter .head, .chapter .controls, .chapter .panel, .chapter .search, .decade, .fact .card")];
     document.querySelectorAll(".decade").forEach((d, i) => d.style.setProperty("--i", i % 4));
     rising.forEach(el => el.classList.add("reveal"));
     whenSeen(rising, el => el.classList.add("in"), 6);
@@ -2013,6 +2165,7 @@ setupRace();
 setupSearch();
 setupDating();
 writeMethod();
+writeFacts();
 drawAll();
 drawRace(1920);
 setupMotion();

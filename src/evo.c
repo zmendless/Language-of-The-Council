@@ -980,6 +980,15 @@ typedef struct {
     long seenOwn, seenAny;
 } ExamplePool;
 
+// Voices of the year for the time machine: a few sentences with a competing word from every
+// five years, whatever the word's era, so that the 1950s speak as well as the 1920s.
+#define VOICES_PER_PERIOD 8
+typedef struct {
+    Example items[DATE_BINS][VOICES_PER_PERIOD];
+    char roles[DATE_BINS][VOICES_PER_PERIOD][16];
+    long seen[DATE_BINS];
+} Voices;
+
 static void freeExample(Example *e) {
     free(e->before);
     free(e->word);
@@ -1019,7 +1028,16 @@ static char *clip(const char *s, int len, int max, bool fromEnd) {
     return out;
 }
 
-static void collectExamples(sqlite3 *db, const char *rawDir, const Study *s, ExamplePool *pools) {
+static void keepExample(Example *e, const Transcript *t, const char *before, const char *start, int len, const char *after) {
+    freeExample(e);
+    e->year = t->date.year;
+    snprintf(e->id, sizeof e->id, "%s", t->id);
+    e->before = clip(before, (int)strlen(before), 110, true);
+    e->word = clip(start, len, len, false);
+    e->after = clip(after, (int)strlen(after), 110, false);
+}
+
+static void collectExamples(sqlite3 *db, const char *rawDir, const Study *s, ExamplePool *pools, Voices *voices) {
     // Every form of every competing word, mapped to its slot (concept * MAX_COMPETITORS + word).
     Counter forms = {0};
     sqlite3_stmt *sel = dbPrepare(db, "SELECT form FROM lexicon WHERE lemma = ?1 UNION SELECT ?1");
@@ -1064,6 +1082,15 @@ static void collectExamples(sqlite3 *db, const char *rawDir, const Study *s, Exa
                 char whole[2200];
                 snprintf(whole, sizeof whole, "%s%.*s%s", before, len, t.lines[l] + start, after);
                 if(!readable(whole)) continue;
+                int bin = dateBin(t.date.year);
+                if(bin >= 0) {
+                    long seen = ++voices->seen[bin];
+                    long at = seen <= VOICES_PER_PERIOD ? seen - 1 : (long)(nextRandom() % seen);   // reservoir sampling
+                    if(at < VOICES_PER_PERIOD) {
+                        keepExample(&voices->items[bin][at], &t, before, t.lines[l] + start, len, after);
+                        snprintf(voices->roles[bin][at], sizeof voices->roles[bin][at], "%s", cs->roles[w]);
+                    }
+                }
                 ExamplePool *pool = &pools[slot->n];
                 for(int k = 0; k < 2; k++) {
                     if(k == 0 && !own) continue;
@@ -1072,13 +1099,7 @@ static void collectExamples(sqlite3 *db, const char *rawDir, const Study *s, Exa
                     long seen = ++*counter;
                     long at = seen <= EXAMPLES ? seen - 1 : (long)(nextRandom() % seen);   // reservoir sampling
                     if(at >= EXAMPLES) continue;
-                    Example *e = &set[at];
-                    freeExample(e);
-                    e->year = t.date.year;
-                    snprintf(e->id, sizeof e->id, "%s", t.id);
-                    e->before = clip(before, (int)strlen(before), 110, true);
-                    e->word = clip(t.lines[l] + start, len, len, false);
-                    e->after = clip(after, (int)strlen(after), 110, false);
+                    keepExample(&set[at], &t, before, t.lines[l] + start, len, after);
                 }
             }
         }
@@ -1111,6 +1132,30 @@ static void jsonExamples(FILE *f, ExamplePool *pool) {
         freeExample(&pool->own[i]);
         freeExample(&pool->any[i]);
     }
+}
+
+static void jsonVoices(FILE *f, Voices *v) {
+    fputs(",\"voices\":[", f);
+    bool first = true;
+    for(int b = 0; b < DATE_BINS; b++) {
+        for(int k = 0; k < VOICES_PER_PERIOD && k < v->seen[b]; k++) {
+            Example *e = &v->items[b][k];
+            fprintf(f, "%s{\"y\":%d,\"id\":", first ? "" : ",", e->year);
+            jsonString(f, e->id);
+            fputs(",\"b\":", f);
+            jsonString(f, e->before);
+            fputs(",\"w\":", f);
+            jsonString(f, e->word);
+            fputs(",\"a\":", f);
+            jsonString(f, e->after);
+            fputs(",\"role\":", f);
+            jsonString(f, v->roles[b][k]);
+            fputc('}', f);
+            freeExample(e);
+            first = false;
+        }
+    }
+    fputc(']', f);
 }
 
 static void jsonDating(FILE *f, const DatingModel *m, const DatingTest *t) {
@@ -1155,7 +1200,7 @@ static void jsonDating(FILE *f, const DatingModel *m, const DatingTest *t) {
 }
 
 // Everything the web page shows, as one JSON object.
-static void writeWebData(FILE *f, sqlite3 *db, const Study *s, ExamplePool *pools) {
+static void writeWebData(FILE *f, sqlite3 *db, const Study *s, ExamplePool *pools, Voices *voices) {
     fprintf(f, "{\"first\":%d,\"last\":%d,\"sittings\":%d,\"words\":%ld,", WEB_FIRST, WEB_LAST, s->sittings, s->words);
     fputs("\"tokens\":", f);
     jsonYears(f, s->tokens.n);
@@ -1297,6 +1342,7 @@ static void writeWebData(FILE *f, sqlite3 *db, const Study *s, ExamplePool *pool
         jsonString(f, s->vocab.words[sv->kept[i]].word);
     }
     fputs("]}", f);
+    jsonVoices(f, voices);
     jsonDating(f, &s->dating, &s->datingTest);
     fputc('}', f);
 }
@@ -1318,7 +1364,8 @@ static int cmdWeb(char **argv) {
     }
     ExamplePool *pools = calloc(s->nConcepts * MAX_COMPETITORS, sizeof *pools);
     rngState = 20240101;
-    collectExamples(db, argv[2], s, pools);
+    Voices *voices = calloc(1, sizeof *voices);
+    collectExamples(db, argv[2], s, pools, voices);
     char path[4096];
     snprintf(path, sizeof path, "%s/data.json", argv[4]);
     FILE *f = fopen(path, "w");
@@ -1326,7 +1373,8 @@ static int cmdWeb(char **argv) {
         perror(path);
         return 1;
     }
-    writeWebData(f, db, s, pools);
+    writeWebData(f, db, s, pools, voices);
+    free(voices);
     fclose(f);
     char *data = readFile(path);
     for(int bare = 0; bare < 2; bare++) {
