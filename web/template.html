@@ -229,6 +229,8 @@ button, input, select { font: inherit; color: inherit; }
 .tm-row:hover { background: var(--surface); }
 .tm-row .o { text-align: right; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tm-row .n { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tm-row .o { transform-origin: right center; }
+.tm-row .n { transform-origin: left center; }
 .tm-row .o.lead { color: var(--old); font-weight: 700; }
 .tm-row .n.lead { color: var(--new); font-weight: 700; }
 /* One element, red then blue with a hard edge at the new word's share (--p): both colours
@@ -1098,7 +1100,7 @@ function setupTimeMachine() {
         const fill = bar;
         const n = html("span", {class: "n"}, b, c.newWord);
         b.addEventListener("click", () => { showConcept(c); document.getElementById("kavram").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth"}); });
-        TM.rows.push({c, o, n, fill, shown: NaN, target: 0});
+        TM.rows.push({c, row: b, o, n, fill, shown: NaN, target: 0});
     }
     const slider = document.getElementById("tm-year"), play = document.getElementById("tm-play");
     TM.mark = sliderTicks(slider);
@@ -1161,8 +1163,11 @@ function drawTimeMachine(t) {
 function easeBars() {
     const show = r => {
         r.fill.style.setProperty("--p", (r.shown * 100).toFixed(2) + "%");   // repaints the bar only, no layout
-        r.o.classList.toggle("lead", r.shown <= 0.5);
-        r.n.classList.toggle("lead", r.shown > 0.5);
+        const lead = r.shown > 0.5;
+        if(r.lead !== undefined && lead !== r.lead) flashRow(r, lead);
+        r.lead = lead;
+        r.o.classList.toggle("lead", !lead);
+        r.n.classList.toggle("lead", lead);
     };
     if(reduceMotion || TM.rows.some(r => isNaN(r.shown))) {   // the first drawing does not move
         for(const r of TM.rows) { r.shown = r.target; show(r); }
@@ -1185,6 +1190,15 @@ function easeBars() {
         else TM.easing = false;
     };
     requestAnimationFrame(step);
+}
+
+// A word that takes the lead flashes its row in its colour and grows for a moment, so that
+// each crossing (and each return of an old word) can be seen as it happens.
+function flashRow(r, lead) {
+    if(STILL) return;
+    const [cr, cg, cb] = hexRgb(css(lead ? "--new" : "--old"));
+    r.row.animate([{backgroundColor: `rgba(${cr}, ${cg}, ${cb}, 0.2)`}, {backgroundColor: `rgba(${cr}, ${cg}, ${cb}, 0)`}], {duration: 1200, easing: "ease-out"});
+    (lead ? r.n : r.o).animate([{transform: "scale(1.15)"}, {transform: "none"}], {duration: 650, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)"});
 }
 
 // Voices of the year: a real sentence from the transcripts, from about the year shown. While
