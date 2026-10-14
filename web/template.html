@@ -194,6 +194,11 @@ button, input, select { font: inherit; color: inherit; }
 .btn:hover { border-color: var(--faint); }
 .btn.primary { background: var(--new); border-color: var(--new); color: #fff; min-width: 96px; }
 .btn.primary:hover { filter: brightness(1.08); }
+.btn.play::before {
+    content: ""; display: inline-block; width: 0.62em; height: 0.72em; margin-right: 9px; vertical-align: -0.04em;
+    background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+.btn.play.playing::before { clip-path: none; background: linear-gradient(90deg, currentColor 0 34%, transparent 34% 66%, currentColor 66%); }
 /* The year sliders: a thin track filled up to the year shown, and under it a tick for each
    reform date that turns red once the year has passed it. The thumb's centre runs from 10px
    to 10px before the end, so the ticks sit in the same span. */
@@ -315,6 +320,13 @@ button, input, select { font: inherit; color: inherit; }
 .selected .tag button { background: rgba(0,0,0,0.18); border: 0; color: #fff; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; line-height: 1; }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.92rem; color: var(--muted); }
 .msg { color: var(--old); font-size: 0.92rem; min-height: 1.4em; margin-top: 6px; }
+/* A word added to the search: its tag pops in, its curve draws itself from 1920 on and its
+   points and name follow (drawSearch). */
+@keyframes pop { from { opacity: 0; transform: scale(0.7); } }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.selected .tag.fresh { animation: pop 0.35s cubic-bezier(0.2, 0.7, 0.3, 1.3) backwards; }
+#words path.drawing { stroke-dasharray: 1; animation: draw 1.3s cubic-bezier(0.45, 0, 0.2, 1) backwards; }
+#words .appearing { animation: fadeIn 0.5s 0.9s backwards; }
 
 /* word curves in tooltips */
 .tip svg.spark { display: block; width: 220px; height: 44px; margin-top: 6px; }
@@ -503,7 +515,7 @@ svg .label { fill: var(--ink); }
                 <p class="intro">Her satır bir kavram: solda eski, sağda bugünkü sözcük. Yüz yıl yarım dakikada.</p>
             </div>
             <div class="controls">
-                <button class="btn primary" id="tm-play" type="button">Oynat</button>
+                <button class="btn primary play" id="tm-play" type="button">Oynat</button>
                 <div class="scrub"><input class="slider" id="tm-year" type="range" min="1920" max="2023" step="1" value="1920" aria-label="Yıl"></div>
             </div>
             <div class="tm-top">
@@ -625,7 +637,7 @@ svg .label { fill: var(--ink); }
                 <p class="intro">Her yıl en çok kullanılan on iki isim ve sıfat. Renk: köken.</p>
             </div>
             <div class="controls">
-                <button class="btn primary" id="race-play" type="button">Oynat</button>
+                <button class="btn primary play" id="race-play" type="button">Oynat</button>
                 <div class="scrub"><input class="slider" id="race-year" type="range" min="1920" max="2023" step="0.01" value="1920" aria-label="Yıl"></div>
             </div>
             <div class="tm-top">
@@ -955,6 +967,7 @@ function periodMarker(s, x, top, h) {
         dot.dataset.r = dot.getAttribute("r");
         if(!m.dots.has(b)) m.dots.set(b, []);
         m.dots.get(b).push(dot);
+        return dot;
     };
     m.show = b => {
         if(b === m.at) return;
@@ -994,6 +1007,12 @@ function sliderTicks(slider) {
         slider.style.setProperty("--fill", (clamp(at(t), 0, 1) * 100).toFixed(2) + "%");
         EVENTS.forEach((e, k) => ticks[k].classList.toggle("past", t >= e.y));
     };
+}
+
+// A play button's word and icon: a triangle, or two bars while it plays.
+function playLabel(button, playing) {
+    button.textContent = playing ? "Durdur" : "Oynat";
+    button.classList.toggle("playing", playing);
 }
 
 function legend(container) {
@@ -1166,10 +1185,10 @@ function setupTimeMachine() {
     }
     const slider = document.getElementById("tm-year"), play = document.getElementById("tm-play");
     TM.mark = sliderTicks(slider);
-    slider.addEventListener("input", () => { TM.playing = false; play.textContent = "Oynat"; drawTimeMachine(+slider.value); });
+    slider.addEventListener("input", () => { TM.playing = false; playLabel(play, false); drawTimeMachine(+slider.value); });
     play.addEventListener("click", () => {
         TM.playing = !TM.playing;
-        play.textContent = TM.playing ? "Durdur" : "Oynat";
+        playLabel(play, TM.playing);
         if(TM.playing) {
             if(TM.year >= L) TM.year = F;
             let last = performance.now();
@@ -1178,7 +1197,7 @@ function setupTimeMachine() {
                 TM.year = Math.min(L, TM.year + (now - last) / 1000 * 4);   // four years a second
                 last = now;
                 drawTimeMachine(TM.year);
-                if(TM.year >= L) { TM.playing = false; play.textContent = "Oynat"; return; }
+                if(TM.year >= L) { TM.playing = false; playLabel(play, false); return; }
                 requestAnimationFrame(step);
             };
             requestAnimationFrame(step);
@@ -1757,10 +1776,10 @@ function setupRace() {
     box.style.height = RACE.rows * RACE.rowH + "px";
     const slider = document.getElementById("race-year"), play = document.getElementById("race-play");
     RACE.mark = sliderTicks(slider);
-    slider.addEventListener("input", () => { RACE.playing = false; play.textContent = "Oynat"; drawRace(+slider.value); });
+    slider.addEventListener("input", () => { RACE.playing = false; playLabel(play, false); drawRace(+slider.value); });
     play.addEventListener("click", () => {
         RACE.playing = !RACE.playing;
-        play.textContent = RACE.playing ? "Durdur" : "Oynat";
+        playLabel(play, RACE.playing);
         if(!RACE.playing) return;
         if(RACE.year >= L) RACE.year = F;
         let last = performance.now();
@@ -1769,7 +1788,7 @@ function setupRace() {
             RACE.year = Math.min(L, RACE.year + (now - last) / 1000 * 2.5);   // slower than the time machine: it reorders every year
             last = now;
             drawRace(RACE.year);
-            if(RACE.year >= L) { RACE.playing = false; play.textContent = "Oynat"; return; }
+            if(RACE.year >= L) { RACE.playing = false; playLabel(play, false); return; }
             requestAnimationFrame(step);
         };
         requestAnimationFrame(step);
@@ -1868,10 +1887,12 @@ function searchFor(words, replace) {
     document.getElementById("ara").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth"});
 }
 function drawSearch() {
+    // Words that are new since the last drawing: their tag pops in and their curve draws itself.
+    const fresh = word => SEARCH.drawn !== undefined && !SEARCH.drawn.includes(word) && !STILL;
     const sel = document.getElementById("selected");
     sel.textContent = "";
     SEARCH.words.forEach((w, k) => {
-        const t = html("span", {class: "tag", style: `background: var(--w${k + 1})`}, sel, w + " ");
+        const t = html("span", {class: fresh(w) ? "tag fresh" : "tag", style: `background: var(--w${k + 1})`}, sel, w + " ");
         const o = D.vocab.o[VOCAB.get(w)];
         t.title = ORIGINS[o];
         const b = html("button", {type: "button", "aria-label": w + " kaldır"}, t, "×");
@@ -1897,16 +1918,22 @@ function drawSearch() {
     eventLines(s, x, top, top + h, !narrow);
     const ends = [], mark = periodMarker(s, x, top, h);
     series.forEach((vals, k) => {
-        const col = css(`--w${k + 1}`), pts = bins.map((b, i) => [x(b + 2), y(vals[i])]);
-        if(series.length === 1) svg("path", {d: path(pts) + `L${pts[pts.length - 1][0]},${y(0)}L${pts[0][0]},${y(0)}Z`, fill: col, opacity: 0.12}, s);
-        svg("path", {d: path(pts), fill: "none", stroke: col, "stroke-width": 3, "stroke-linejoin": "round"}, s);
-        pts.forEach(([px, py], i) => mark.add(bins[i], svg("circle", {cx: px, cy: py, r: 3.5, fill: col}, s)));
-        ends.push({k, y: pts[pts.length - 1][1], col});
+        const col = css(`--w${k + 1}`), pts = bins.map((b, i) => [x(b + 2), y(vals[i])]), isNew = fresh(SEARCH.words[k]);
+        const parts = [];
+        if(series.length === 1) parts.push(svg("path", {d: path(pts) + `L${pts[pts.length - 1][0]},${y(0)}L${pts[0][0]},${y(0)}Z`, fill: col, opacity: 0.12}, s));
+        const line = svg("path", {d: path(pts), fill: "none", stroke: col, "stroke-width": 3, "stroke-linejoin": "round"}, s);
+        pts.forEach(([px, py], i) => parts.push(mark.add(bins[i], svg("circle", {cx: px, cy: py, r: 3.5, fill: col}, s))));
+        if(isNew) {   // the line is measured as length 1, so that a dash of 1 can uncover it
+            line.setAttribute("pathLength", 1);
+            line.classList.add("drawing");
+            parts.forEach(e => e.classList.add("appearing"));
+        }
+        ends.push({k, y: pts[pts.length - 1][1], col, isNew});
     });
     if(!narrow) {
         ends.sort((a, b) => a.y - b.y);
         for(let i = 1; i < ends.length; i++) ends[i].y = Math.max(ends[i].y, ends[i - 1].y + 20);
-        ends.forEach(e => svg("text", {x: w - right + 10, y: e.y + 5, "font-size": 15, "font-weight": 700, style: `fill: ${e.col}`}, s).textContent = SEARCH.words[e.k]);
+        ends.forEach(e => svg("text", {x: w - right + 10, y: e.y + 5, "font-size": 15, "font-weight": 700, style: `fill: ${e.col}`, class: e.isNew ? "appearing" : ""}, s).textContent = SEARCH.words[e.k]);
     }
     svg("text", {x: 56, y: top - (narrow ? 10 : 72), "font-size": 12}, s).textContent = "milyon sözcükte kaç kez (beş yıllık dönemler)";
     const hover = svg("rect", {x: 56, y: top, width: w - right - 56, height: h, fill: "transparent"}, s);
@@ -1919,6 +1946,7 @@ function drawSearch() {
             `<br><span class="dot" style="background: var(--w${k + 1})"></span>${esc(word)} <span class="num">${nf.format(Math.round(series[k][bi]))}</span>`).join(""), ev);
     });
     hover.addEventListener("pointerleave", () => { hideTip(); mark.hide(); });
+    SEARCH.drawn = [...SEARCH.words];
 }
 
 // ---------------------------------------------------------------- dating a text
