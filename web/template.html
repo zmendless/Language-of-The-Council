@@ -164,7 +164,14 @@ button, input, select { font: inherit; color: inherit; }
     font-size: 0.95rem; border-bottom: 2px solid transparent;
 }
 .toc a:hover { color: var(--ink); }
-.toc a.on { color: var(--ink); border-bottom-color: var(--new); }
+.toc a.on { color: var(--ink); }
+/* One line under the menu glides to the chapter in view: it is 1px wide, moved and stretched
+   (placeTocMarker), so that it never lays out the menu again. */
+.toc ul { position: relative; }
+.toc-marker {
+    position: absolute; left: 0; bottom: 0; width: 1px; height: 2px; background: var(--new); transform-origin: 0 0;
+    opacity: 0; pointer-events: none; transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 0.3s;
+}
 
 /* ---------------------------------------------------------------- chapters */
 .chapter { padding-block: 64px 24px; scroll-margin-top: 44px; }
@@ -405,6 +412,9 @@ svg .label { fill: var(--ink); }
 .theme { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
 .theme:hover { color: var(--ink); }
 
+/* the theme switch: the new page is uncovered in a circle (setupTheme), the old one stays put */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
 /* method: one line each, opened on demand */
 .method details { border-top: 1px solid var(--line); padding-top: 10px; }
 .method summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
@@ -464,6 +474,7 @@ svg .label { fill: var(--ink); }
         <li><a href="#ara">Sözcük ara</a></li>
         <li><a href="#tarih">Metnin yaşı</a></li>
         <li><a href="#yontem">Yöntem</a></li>
+        <li class="toc-marker" id="toc-marker" aria-hidden="true"></li>
         <li class="theme-item"><button class="theme" id="theme" type="button" aria-label="Açık ya da koyu tema" title="Tema"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 2.5a7.5 7.5 0 0 1 0 15z" fill="currentColor"/></svg></button></li>
     </ul>
 </nav>
@@ -2345,14 +2356,23 @@ function setupProgress() {
     }, {passive: true});
 }
 
-// Light or dark, remembered in this browser.
+// Light or dark, remembered in this browser. Where the browser can (view transitions), the
+// new theme spreads from the button in a circle; the charts are redrawn before it shows.
 function setupTheme() {
     const root = document.documentElement;
     try { const t = localStorage.getItem("meclisin-dili-tema"); if(t) root.dataset.theme = t; } catch(e) { /* no storage */ }
-    document.getElementById("theme").addEventListener("click", () => {
+    document.getElementById("theme").addEventListener("click", ev => {
         const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-        root.dataset.theme = dark ? "light" : "dark";
-        try { localStorage.setItem("meclisin-dili-tema", root.dataset.theme); } catch(e) { /* no storage */ }
+        const flip = () => {
+            root.dataset.theme = dark ? "light" : "dark";
+            try { localStorage.setItem("meclisin-dili-tema", root.dataset.theme); } catch(e) { /* no storage */ }
+        };
+        if(!document.startViewTransition || reduceMotion) return flip();
+        const r = ev.currentTarget.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const radius = Math.hypot(Math.max(cx, innerWidth - cx), Math.max(cy, innerHeight - cy));
+        document.startViewTransition(flip).ready.then(() => root.animate(
+            {clipPath: [`circle(0px at ${cx}px ${cy}px)`, `circle(${radius}px at ${cx}px ${cy}px)`]},
+            {duration: 600, easing: "cubic-bezier(0.4, 0, 0.2, 1)", pseudoElement: "::view-transition-new(root)"}));
     });
 }
 
@@ -2401,12 +2421,23 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll);
 new MutationObserver(drawAll).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
 if(document.fonts) document.fonts.ready.then(drawAll);
 
-// The section in view is marked in the navigation.
+// The section in view is marked in the navigation. The marker line jumps into place the first
+// time and glides after that.
+function placeTocMarker() {
+    const marker = document.getElementById("toc-marker"), on = document.querySelector(".toc a.on");
+    if(!on) return;
+    const first = marker.style.opacity !== "1";
+    if(first) marker.style.transition = "none";
+    marker.style.transform = `translateX(${on.offsetLeft}px) scaleX(${on.offsetWidth})`;
+    marker.style.opacity = 1;
+    if(first) { void marker.offsetWidth; marker.style.transition = ""; }
+}
 const links = [...document.querySelectorAll(".toc a")];
 const sectionObserver = new IntersectionObserver(entries => {
     for(const e of entries) {
         if(!e.isIntersecting) continue;
         links.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
+        placeTocMarker();
         // On a narrow screen the menu scrolls sideways: keep the current chapter's link in it.
         const on = links.find(a => a.classList.contains("on")), ul = on && on.closest("ul");
         if(ul && ul.scrollWidth > ul.clientWidth) {
@@ -2415,4 +2446,6 @@ const sectionObserver = new IntersectionObserver(entries => {
     }
 }, {rootMargin: "-45% 0px -50% 0px"});
 document.querySelectorAll(".chapter").forEach(sec => sectionObserver.observe(sec));
+const linkSizes = new ResizeObserver(() => placeTocMarker());   // the web font, or a wider window
+links.forEach(a => linkSizes.observe(a));
 </script>
