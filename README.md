@@ -33,10 +33,11 @@ make web      # the website: out/web/index.html, one file that opens in any brow
 make video    # the two animations as MP4 files in out/ (29 s and 44 s, under 4 MB together)
 ```
 
-The small sample used for the results below is about 260 sittings: 6 volumes × 2 sittings per term. To build it:
+The results below come from two samples together: the small one (about 260 sittings, 6 volumes × 2 sittings per term) and the large one (`data/large_urls.txt`, about 770 more). To build them:
 
 ```sh
 make sample    # downloads data/sample_urls.txt (about an hour, polite to the server) and builds the database
+make large     # adds data/large_urls.txt (several hours)
 make figures   # then every chart
 ```
 
@@ -81,8 +82,8 @@ It also rejoins hyphenated words, reads the date (including the Ottoman calendar
   - Function words (*ve, ama, her*) are left out: many are Arabic or Persian, but they were never replaced.
 - **The age of a text.** Every five years has its own word frequencies (*sene* in 1925, *yıl* in 2015). `evo date` guesses when a text was spoken from its words alone: a naive Bayes classifier that adds up, word by word, how much likelier the word is in one period than in another. It uses only the 20,000 most used dictionary word forms, not names, so it reads the language and not the ministers of the day.
   - **The test** (`evo datetest`): every sitting is dated with its whole volume taken out of the model, since sittings of one volume are days apart and share their topics.
-  - **Results on the small sample:** off by 4.3 years on average for a whole sitting, 4.9 for 200 words and 10.4 for 20 words (one sentence). Always guessing the middle year would be off by 24.1.
-  - **It can be fooled.** It puts Atatürk's *Gençliğe Hitabe* (1927) in the 1970s, because its words (*Türk*, *gençliği*, *istiklalini*) were common in the speeches of that decade. The opening of *Nutuk* (1927) lands in 1935–39.
+  - **Results** (1,020 sittings): off by 2.8 years on average for a whole sitting, 3.2 for 200 words and 8.5 for 20 words (one sentence). Always guessing the middle year would be off by 23.7.
+  - **It is not always right.** The opening of *Nutuk* (1927) lands in 1920–24, but *Gençliğe Hitabe* (1927) in 1940–44: its rhetoric (*Türk*, *gençliği*, *istiklalini*) stayed common in later speeches. On the small sample it was put in the 1970s; more data moved it closer.
 - **Two eras compared.** `evo eras` ranks words by how typical they are of each era: a log-odds ratio with an informative Dirichlet prior (Monroe, Colaresi & Quinn 2008), so that rare words do not top the list by chance.
 
 ## The charts
@@ -140,29 +141,46 @@ The time machine shows the observed shares (smoothed over a few years), not the 
 - `./evo origins DB out.csv` also lists the most frequent words it could not classify.
 - `./evo clean data/raw/tbmm08012073.txt`: shows exactly what the cleaner keeps.
 
-## Results so far (small sample)
+## Results so far
 
-311 sittings and 5.55 million words, 1920–2023, with the 49 word pairs in `data/concepts.tsv`. The 1936–39 sittings are missing (see below). This is a first look from a small sample and a list of well-known pairs, not final findings. Reproduce it with `make sample && make figures`.
+1,020 sittings and 18.7 million words, 1920–2023 (`data/sample_urls.txt` and `data/large_urls.txt`), with the 78 word pairs in `data/concepts.tsv`. The 1936–39 sittings are missing (see below), and the pairs are well-known ones, so these are findings from a large sample, not yet from an unbiased word list. Reproduce them with `make sample && make large && make figures`.
 
 ![timeline](docs/takvim.png)
 
 - **The vocabulary of parliament changed by half.**
-  - Arabic and Persian words were 73% of the nouns and adjectives used in 1920–24, and 34% in 2020–24.
-  - Turkish words rose from 19% to 52%, Western words from 4% to 10% (`out/origins.csv`).
-- **Most replacements happened 1945–1960, not right after the reforms of the 1930s.** In 45 of the 49 meanings the new word took over: 23 of those 45 crossed 50% between 1945 and 1959, only 2 before 1945.
+  - Arabic and Persian words were 73% of the nouns and adjectives used around 1924, and 35% around 2020 (the numbers on the website's first screen).
+  - Turkish words rose from 19% to 50%, Western words from 4% to 10% (`out/origins.csv`).
+- **Most replacements happened 1945–1960, not right after the reforms of the 1930s.**
+  - In 69 of the 78 meanings the new word took over.
+  - 34 of those 69 crossed 50% between 1945 and 1959; only 4 before 1945.
 - **The 1950s reversal.** After 1952, when the constitution was returned to its 1924 wording, the old official words came back: *vekil, reis, başvekil, mebus, layiha*.
-  - The new word was ahead in 20 of 49 meanings in 1950, in only 8 in 1955, and in 28 in 1965.
-  - The Arabic share of the vocabulary moved the same way: 51% (1945–49), 57% (1955–59), then down.
-- **Parliament's own vocabulary changed first.**
-  - Median crossover year: procedure words (meclis) 1954; education and science 1955; state and politics 1966; everyday words 1966.
-  - Meclis against all others: 11 years earlier, p = 0.075 (permutation test). Suggestive, not significant with 49 meanings; more pairs from the 1935 guide would settle it.
+  - The new word was ahead in 28 of 78 meanings in 1950, in only 8 in 1955, and in 51 in 1965.
+  - The Arabic share of the vocabulary moved the same way: 50% around 1947, 57% around 1957, then down.
+- **The themes changed at different times, but not clearly so.**
+  - Median crossover year: procedure words (meclis) 1954; education and science 1957; state and politics 1961; everyday words 1964.
+  - No theme differs from the rest at p < 0.05 (permutation test). The closest: everyday words, about 7 years later than the rest (p = 0.07).
 - **Some replacements never caught on in parliament.**
-  - Never above half: *yanıt* (at most 6% of uses), *sözcük* (12%), *olanak* (19%), *gereksinim* (4%).
-  - Only partly: *kent* (60%), *görüşme* (76%), *bağımsızlık* (75%), *sorun* (80%), *özgürlük* (80%).
-- **Speed varies a lot.** *intihap → seçim* went from 10% to 90% in 15 years; *sene → yıl* took 53, *şehir → kent* 88.
-- **Turkish words lasted, Arabic ones did not.** Of the 300 most used nouns and adjectives of the 1920s, 67% of the Turkish ones are still in use in the 2020s (at a quarter of their old frequency or more), but only 35% of the Arabic ones (`omur`). Gone almost entirely: *intihap, muvafık, ruzname, muavenet, mezuniyet*.
-- **How MPs address each other changed three times.** *Efendi* (over 10,000 per million words in the 1920s) collapses after the 1934 law that abolished titles; *muhterem* peaks in the late 1950s; *sayın* takes over from the 1960s, and *değerli* rises from the 1970s.
-- **The words of each decade follow history** (`onyillar`): *tütün, toprak, zirai* in the 1960s, *sıkıyönetim* and *senato* in the 1970s, *sektör, proje, banka* in the 2000s, *terör* in the 2010s.
+  - Never above half:
+    - *yanıt*: at most 8% of the uses;
+    - *gereksinim*: 6%;
+    - *sözcük*: 20%;
+    - *olanak*: 29%;
+    - *öneri*: 31%;
+    - *yasa*: 34%;
+    - *yaşam*: 42%;
+    - *deneyim*: 48%.
+  - Only partly: *temel* (55%), *kent* (66%), *bağımsızlık* (68%), *devrim* (76%), *özgürlük* and *düşünce* (78%), *görüşme* and *sorun* (81%).
+- **Speed varies a lot.** *intihap → seçim* went from 10% to 90% in 12 years; *sene → yıl* took 50.
+- **Turkish words lasted, Arabic ones did not.**
+  - Of the 300 most used nouns and adjectives of the 1920s, 73% of the Turkish ones are still in use in the 2020s (at a quarter of their old frequency or more), but only 39% of the Arabic ones (`omur`).
+  - Gone almost entirely: *intihap, ruzname, varidat, muharrir, merbut*.
+- **How MPs address each other changed three times.**
+  - *Efendi*: 9,445 times per million words in the 1920s, 957 in the 1940s, after the 1934 law that abolished titles.
+  - Then *muhterem* in the 1950s, *sayın* from the 1960s, and *değerli* rising later.
+- **The words of each decade follow history** (`onyillar`): *senato* and *anayasa* in the 1970s, *ülke* and *yasa* in the 2000s, *kadın* and *mikrofon* in the 2020s.
+- **A text's words give away its age.**
+  - Dated with its volume left out of the model, a whole sitting is placed 2.8 years from its true year on average, and within 5 years 89% of the time.
+  - A 20-word sentence is off by 8.5 years. Guessing the middle year without reading would be off by 23.7.
 
 ![origins](docs/koken.png)
 
@@ -191,7 +209,7 @@ The time machine shows the observed shares (smoothed over a few years), not the 
 
 1. Re-OCR the 1936–39 scans.
 2. Parse the 1935 guide and draw a random sample of its entries; replace or extend `data/concepts.tsv`.
-3. A larger download: 15–30 sittings per year.
+3. An even larger download: 15–30 sittings per year (now about 10).
 4. Check every chosen word with `kwic` and record the decisions in `data/exclusions.tsv`.
 
 ## Data and licences
