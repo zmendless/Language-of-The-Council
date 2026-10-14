@@ -123,7 +123,7 @@ The time machine shows the observed shares (smoothed over a few years), not the 
 - **Small details:**
   - **Word curves:** hovering over (or tapping) a word in the decade cards, the ranking or a dated text shows that word's curve over the century in the tooltip.
   - **"Biliyor muydunuz?" cards** between chapters, each with one surprising number from the data (the fastest change, *efendi* before and after 1934, a word that vanished, an Arabic word that held on, a word that never gave way). Each one links to its chart.
-  - **Voices of the year:** while the time machine plays, a real sentence from about that year appears under it (`evo web` keeps 8 from every five years).
+  - **Voices of the year:** while the time machine plays, a real sentence from about that year appears under the bars (`evo web` keeps 8 from every five years).
   - **Ageing paper:** the time machine's background is yellowed in the 1920s and turns white towards today.
 - **A light/dark switch** in the navigation bar.
 - **Smooth scrolling:**

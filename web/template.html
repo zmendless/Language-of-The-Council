@@ -264,7 +264,7 @@ button, input, select { font: inherit; color: inherit; }
 
 /* voices of the year: a real sentence from about the year the time machine shows. Its room
    is kept (three lines) so that nothing below it moves. */
-.voice { margin: 0 0 14px; min-height: calc(3 * 1.55em + 1.6em); font: 400 0.95rem/1.55 var(--mono); color: var(--muted); }
+.voice { margin: 18px 0 0; min-height: calc(3 * 1.55em + 1.6em); font: 400 0.95rem/1.55 var(--mono); color: var(--muted); }
 .voice blockquote { margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .voice mark { background: none; font-weight: 500; border-bottom: 2px solid currentColor; padding: 0 1px; }
 .voice figcaption { font: 0.82rem var(--body); color: var(--faint); margin-top: 4px; }
@@ -409,13 +409,13 @@ svg .label { fill: var(--ink); }
                     <div class="event" id="tm-event"></div>
                 </div>
             </div>
-            <figure class="voice" id="tm-voice" aria-live="off"></figure>
             <div>
                 <div class="eyebrow">İsim ve sıfatların kökeni</div>
                 <div class="originbar" id="tm-origin"></div>
                 <div class="legend" id="tm-legend"></div>
             </div>
             <div class="tm-rows" id="tm-rows"></div>
+            <figure class="voice" id="tm-voice" aria-live="off"></figure>
         </div>
     </section>
 
