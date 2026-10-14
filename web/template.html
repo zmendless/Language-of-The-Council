@@ -403,6 +403,13 @@ svg .label { fill: var(--ink); }
 .sweep.play > svg { animation: sweepRight 1.3s cubic-bezier(0.45, 0, 0.2, 1) both; }
 .sweep-down.play > svg { animation: sweepDown 1.6s cubic-bezier(0.45, 0, 0.2, 1) both; }
 .count { font-variant-numeric: tabular-nums; }
+/* The small curves in the cards (Biliyor muydunuz?, Kaybolanlar, Direnenler) sweep in after
+   their card has risen, once. */
+.reveal:not(.in) .spark svg, .reveal:not(.in) .wordlist svg { clip-path: inset(0 100% 0 0); }
+.reveal.in:not(.settled) .spark svg { animation: sweepRight 1.1s 0.3s cubic-bezier(0.45, 0, 0.2, 1) backwards; }
+.reveal.in:not(.settled) .wordlist svg { animation: sweepRight 0.9s cubic-bezier(0.45, 0, 0.2, 1) backwards; animation-delay: calc(0.25s + var(--k, 0) * 70ms); }
+/* A new example sentence (another concept, "Başka örnek") fades in. */
+.quote.fresh { animation: voiceIn 0.45s ease backwards; animation-delay: calc(var(--k, 0) * 90ms); }
 
 /* reading progress and theme switch, in the navigation bar */
 .toc { position: sticky; }
@@ -1446,7 +1453,7 @@ function drawQuotes() {
         if(!word.ex.length) return;
         const k = (quoteIndex[wi] || 0) % word.ex.length, ex = word.ex[k];
         const roleVar = word.role === "old" ? "--old" : word.role === "proposal" ? "--proposal" : "--new";
-        const card = html("figure", {class: "quote", style: "margin: 0"}, box);
+        const card = html("figure", {class: STILL ? "quote" : "quote fresh", style: `margin: 0; --k: ${box.children.length}`}, box);
         const who = html("div", {class: "who"}, card);
         html("span", {class: "role", style: `color: var(${roleVar})`}, who, `${ROLE[word.role]} sözcük · ${word.w}`);
         html("span", {class: "num", style: "color: var(--faint); font-size: 0.85rem"}, who, ex.y);
@@ -1629,7 +1636,7 @@ function drawSurvival() {
         for(const word of list) {
             const i = VOCAB.get(word);
             if(i === undefined) continue;
-            const row = html("div", {class: "row"}, box2);
+            const row = html("div", {class: "row", style: `--k: ${box2.children.length}`}, box2);   // --k: the order they sweep in
             const b = html("button", {class: "w", type: "button", style: `color: var(${ORIGIN_VARS[D.vocab.o[i]]})`}, row, word);
             b.addEventListener("click", () => searchFor([word]));
             sparkline(html("div", {}, row), i);
@@ -2313,7 +2320,10 @@ function setupMotion() {
     const rising = [...document.querySelectorAll(".chapter .head, .chapter .controls, .chapter .panel, .chapter .search, .decade, .fact .card")];
     document.querySelectorAll(".decade").forEach((d, i) => d.style.setProperty("--i", i % 4));
     rising.forEach(el => el.classList.add("reveal"));
-    whenSeen(rising, el => el.classList.add("in"), 6);
+    whenSeen(rising, el => {
+        el.classList.add("in");
+        setTimeout(() => el.classList.add("settled"), 2500);   // redrawn curves inside do not sweep again
+    }, 6);
     whenSeen(charts, playOnce, 22);
     const stats = document.getElementById("stats");
     stats.querySelectorAll(".count").forEach(el => { el.textContent = "0"; });
