@@ -130,6 +130,7 @@
     --quote: #f8f5ee;
     --old: #c75134;
     --new: #0072b2;
+    --yes: #1a7f37; --no: #b8164f;   /* a right and a wrong answer in the games: green and crimson, never the old/new word colours */
     --proposal: #cc79a7;
     --even: #ebe6de;
     --ar: #c75134;
@@ -144,8 +145,8 @@
     --sepia: #eadcbc;
     /* Text in a data colour: the same hues, darker in the light theme so that small text
        stays readable (4.5:1) on every background, the yellowed paper included. */
-    --old-t: #b2452a; --new-t: #00679f; --proposal-t: #9a4a7a;
-    --ar-t: #b2452a; --fa-t: #8f5f00; --tr-t: #00679f; --we-t: #007252; --ot-t: #5f646e;
+    --old-t: #a23b22; --new-t: #00679f; --proposal-t: #9a4a7a;
+    --ar-t: #a23b22; --fa-t: #8f5f00; --tr-t: #00679f; --we-t: #007252; --ot-t: #5f646e;
     /* Labels drawn on an origin colour (the time machine's bar). */
     --on-ar: #fff; --on-fa: #17202c; --on-tr: #fff; --on-we: #17202c; --on-ot: #17202c;
     --display: "Fraunces", Georgia, serif;
@@ -169,7 +170,7 @@
     :root:not([data-theme="light"]) {
         --bg: #15140f; --surface: #1c1b16; --glass: #1c1b16; --glass-edge: #4d4a3f; --print: #f07a2e; --print-t: #f07a2e; --press: #f07a2e; --on-press: #15140f;
         --ink: #ece6d8; --muted: #cdc6b6; --faint: #b0a998; --line: #4d4a3f; --print-tone: 0.8;
-        --quote: #1c1b16; --old: #e2714f; --new: #3d9be0; --proposal: #dc8fbb; --even: #3a3f48;
+        --quote: #1c1b16; --old: #e2714f; --new: #3d9be0; --yes: #4cc474; --no: #ff7aa6; --proposal: #dc8fbb; --even: #3a3f48;
         --ar: #e2714f; --fa: #f0b232; --tr: #3d9be0; --we: #25b98b; --ot: #a3a8b1;
         --th-meclis: #9586dc; --th-devlet: #e4668b; --th-genel: #2bb7b7; --th-egitim: #eda04a;
         --sepia: #2e2717;
@@ -184,7 +185,7 @@
 :root[data-theme="dark"] {
     --bg: #15140f; --surface: #1c1b16; --glass: #1c1b16; --glass-edge: #4d4a3f; --print: #f07a2e; --print-t: #f07a2e; --press: #f07a2e; --on-press: #15140f;
     --ink: #ece6d8; --muted: #cdc6b6; --faint: #b0a998; --line: #4d4a3f; --print-tone: 0.8;
-    --quote: #1c1b16; --old: #e2714f; --new: #3d9be0; --proposal: #dc8fbb; --even: #3a3f48;
+    --quote: #1c1b16; --old: #e2714f; --new: #3d9be0; --yes: #4cc474; --no: #ff7aa6; --proposal: #dc8fbb; --even: #3a3f48;
     --ar: #e2714f; --fa: #f0b232; --tr: #3d9be0; --we: #25b98b; --ot: #a3a8b1;
     --th-meclis: #9586dc; --th-devlet: #e4668b; --th-genel: #2bb7b7; --th-egitim: #eda04a;
     --sepia: #2e2717;
@@ -384,7 +385,7 @@ main { counter-reset: sitting; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; margin-bottom: 18px; }
 .btn {
     border: 1px solid var(--glass-edge); background: var(--glass); border-radius: var(--round); padding: 8px 18px;
-    cursor: pointer; font-weight: 600; box-shadow: 0 6px 14px -10px rgba(30, 44, 80, 0.4), var(--rim);
+    cursor: pointer; font-weight: 600; box-shadow: var(--rim);
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 .btn:hover { border-color: var(--line); transform: translateY(-1px); }
@@ -428,6 +429,9 @@ main { counter-reset: sitting; }
 .ticks i { position: absolute; top: 0; width: 2px; height: 7px; margin-left: -1px; border-radius: 1px; background: var(--faint); opacity: 0.55; transition: background-color 0.3s, opacity 0.3s; }
 .ticks i.past { background: var(--old); opacity: 1; }
 .bigyear { min-width: 3.2ch; }
+/* The year in 2px dots: at this size the heavy digits close their counters and touch (the 4 and
+   the 0 of 1940). A little more space between them and one weight lighter keeps each digit its own. */
+.bigyear.bigyear { letter-spacing: 0.04em; font-weight: 800; font-variant-numeric: lining-nums tabular-nums; }
 .event { color: var(--old-t); font-weight: 650; }
 .event small { display: block; color: var(--muted); font-weight: 400; font-size: 0.9rem; }
 /* The time machine's event keeps its room (a label and two lines of detail) when there is
@@ -507,7 +511,7 @@ main { counter-reset: sitting; }
 .picker { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-weight: 500; }
 .picker select {
     padding: 9px 16px; border-radius: var(--round); border: 1px solid var(--glass-edge); background: var(--glass); max-width: 100%;
-    box-shadow: 0 6px 14px -10px rgba(30, 44, 80, 0.4), var(--rim); cursor: pointer;
+    box-shadow: var(--rim); cursor: pointer;
 }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 14px; }
 .chip { font: 500 0.85rem var(--mono); padding: 4px 12px; border-radius: var(--round); background: var(--glass); border: 1px solid var(--glass-edge); box-shadow: var(--rim); }
@@ -570,14 +574,14 @@ ruby.gloss rt { font: 650 0.62em/1 var(--body); color: var(--new-t); letter-spac
 }
 .race .bar .w { text-align: right; font-weight: 650; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .race .bar .track { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.race .bar .fill { height: 26px; border-radius: 9px; flex: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 16px -12px rgba(30, 44, 80, 0.6); }
+.race .bar .fill { height: 26px; border-radius: 9px; flex: none; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); }
 .race .bar .v { font: 500 0.88rem var(--mono); color: var(--muted); white-space: nowrap; }
 
 /* search */
 .search { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .search input {
     flex: 1 1 220px; padding: 11px 18px; border-radius: var(--round); border: 1px solid var(--glass-edge); background: var(--glass); min-width: 0;
-    box-shadow: inset 0 1px 3px rgba(30, 44, 80, 0.1), 0 6px 14px -10px rgba(30, 44, 80, 0.3);
+    box-shadow: inset 0 1px 3px rgba(30, 44, 80, 0.1);
 }
 .search input::placeholder, textarea::placeholder { color: var(--faint); }
 .selected { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; min-height: 34px; }
@@ -645,7 +649,6 @@ ruby.gloss rt { font: 650 0.62em/1 var(--body); color: var(--new-t); letter-spac
 #tarih textarea {
     width: 100%; margin-top: 8px; padding: 14px 16px; border-radius: var(--round); border: 1px solid var(--line);
     background: color-mix(in srgb, var(--surface) 70%, transparent); resize: vertical; font: 400 1rem/1.55 var(--body);
-    box-shadow: inset 0 1px 3px rgba(30, 44, 80, 0.08);
 }
 #tarih .presets { margin-top: 10px; }
 .d-out { margin-top: 18px; min-height: 2.6em; }
@@ -698,7 +701,7 @@ svg text { fill: var(--muted); font-family: var(--body); }
 .hm-on .hm-mark { opacity: 1; }
 .hm-row { border-radius: 2px; box-shadow: 0 0 0 1.5px var(--ink); }
 .hm-year { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 50%, transparent); }
-svg .axis { font: 500 13px var(--body); font-variant-numeric: tabular-nums; fill: var(--muted); }
+svg .axis { font: 600 13.5px var(--body); font-variant-numeric: tabular-nums; fill: var(--muted); }
 svg .label { fill: var(--ink); }
 
 
@@ -847,13 +850,13 @@ html.game-on body > :not(#game):not(.tip):not(.word-line):not(.field) { display:
 .game-mode:hover b { color: var(--print-t); }
 .game-mode i { font: 700 0.85rem var(--type); letter-spacing: 0.08em; font-style: normal; }
 .game-mode b { font: 900 calc(clamp(1.5rem, min(3vw, 4.4vh), 3.4rem) * var(--gs, 1)) var(--display); transition: color 0.2s; }
-.game-mode span { font-size: calc(clamp(0.92rem, min(1.3vw, 2vh), 1.45rem) * var(--gs, 1)); }
+.game-mode span { font-size: calc(clamp(1rem, min(1.5vw, 2.3vh), 1.6rem) * var(--gs, 1)); }
 .game-mode span { color: var(--muted); }
 /* a round is labelled like a chapter's sitting: typed, between two rules */
 .game-round { display: flex; align-items: center; gap: 14px; font: 700 0.9rem var(--type); letter-spacing: 0.08em; }
 .game-round::before, .game-round::after { content: ""; flex: 1; border-top: 1px solid var(--ink); }
 /* the sentence as a page of the record: masthead, the sitting and the year still hidden */
-.game-page { background: var(--quote); border: 1px solid var(--glass-edge); padding: clamp(10px, 1.8vh, 18px) 26px clamp(12px, 2vh, 22px); display: grid; gap: 8px; }
+.game-page { margin: 0; min-width: 0; max-width: 100%; background: var(--quote); border: 1px solid var(--glass-edge); padding: clamp(10px, 1.8vh, 18px) 26px clamp(12px, 2vh, 22px); display: grid; gap: 8px; }
 .game-page .tt-head { display: flex; justify-content: space-between; gap: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--ink);
     font: 700 0.78rem var(--type); letter-spacing: 0.08em; text-transform: uppercase; }
 .game-page .tt-sitting { font: 400 0.85rem var(--type); color: var(--muted); }
@@ -874,10 +877,10 @@ html.game-on body > :not(#game):not(.tip):not(.word-line):not(.field) { display:
 .game-left { display: grid; justify-items: center; align-content: center; gap: 2px; border-right: 1px dotted var(--faint); padding-right: 10px; }
 .game-card .game-badge { font: 900 1.6em/1 var(--display); color: var(--ink); }
 .game-card .game-when { font: 700 0.9em var(--type); color: var(--muted); min-height: 1em; }
-.game-card.right { border: 2px solid var(--new); }
-.game-card.right .game-badge, .game-card.right .game-when { color: var(--new-t); }
-.game-card.wrong { border: 2px dashed var(--old); }
-.game-card.wrong .game-badge, .game-card.wrong .game-when { color: var(--old-t); }
+.game-card.right { border: 3px solid var(--yes); background: color-mix(in srgb, var(--yes) 10%, var(--surface)); }
+.game-card.right .game-badge, .game-card.right .game-when { color: var(--yes); }
+.game-card.wrong { border: 3px dashed var(--no); background: color-mix(in srgb, var(--no) 9%, var(--surface)); }
+.game-card.wrong .game-badge, .game-card.wrong .game-when { color: var(--no); }
 /* game 3: the cut-out word, then the word filled in */
 .game-blank { display: inline-block; min-width: 7ch; height: 1em; margin: 0 0.15em; border-bottom: 2px dashed var(--ink); vertical-align: -0.12em; }
 .game-text mark { background: none; font-weight: 700; border-bottom: 2px solid currentColor; padding: 0 2px; }
@@ -925,8 +928,16 @@ html.game-on body > :not(#game):not(.tip):not(.word-line):not(.field) { display:
 /* answered: the two words step back to make room for the answer */
 .game-pair.answered .game-pick { padding: calc(clamp(8px, 1.8vh, 22px) * var(--gs, 1)) 10px; font-size: calc(clamp(1.8rem, min(4.4vw, 6vh), 3.6rem) * var(--gs, 1)); }
 .game-pick:disabled { cursor: default; }
-.game-pick.right { color: var(--new); border: 2px solid var(--new); }
-.game-pick.wrong { color: var(--old); border: 2px dashed var(--old); }
+.game-pick.right { color: var(--yes); border: 3px solid var(--yes); background: color-mix(in srgb, var(--yes) 10%, var(--surface)); }
+.game-pick.wrong { color: var(--no); border: 3px dashed var(--no); background: color-mix(in srgb, var(--no) 9%, var(--surface)); }
+.game-pick.right::after, .game-pick.wrong::after { position: absolute; top: 6px; right: 10px; font: 700 0.9rem var(--type); letter-spacing: 0.04em; }
+.game-pick.right::after { content: "✓ DOĞRU"; }
+.game-pick.wrong::after { content: "✕ YANLIŞ"; }
+/* the verdict line: a band in the verdict's colour, with the mark and the word, so a glance says it */
+.game-reveal .verdict { padding: 8px 14px; border-left: 6px solid currentColor; background: color-mix(in srgb, currentColor 11%, transparent); }
+.game-reveal .verdict.ok { color: var(--yes); }
+.game-reveal .verdict { font-family: var(--display), "Segoe UI Symbol", "DejaVu Sans", sans-serif; }
+.game-reveal .verdict.no { color: var(--no); }
 .game-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .game .spark { width: 100%; max-width: 560px; height: clamp(40px, 6vh, 64px); }
 /* Jury mode (J, or #juri): under every chart, how it was calculated: the data, the method,
@@ -950,7 +961,9 @@ html.jury .jury-badge { display: block; }
     .game-bar .brand-rest { display: none; }
     .game-bar .pill { white-space: nowrap; font-size: 0.85rem; padding: 10px 4px; }   /* a tap target, not a hairline */
     .game-body { justify-content: flex-start; padding-top: 18px; }
-    .game-text, .game-card { text-align: left; hyphens: manual; }
+    .game-text, .game-card { text-align: left; hyphens: manual; overflow-wrap: anywhere; }
+    .game, .game-body { min-width: 0; max-width: 100vw; }
+    .game-title { overflow-wrap: anywhere; }
     .game-guess, .game-actions { position: sticky; bottom: 14px; z-index: 5; background: var(--bg); box-shadow: 0 0 0 8px var(--bg); }
     .game-modes { gap: 0; }
 }
@@ -995,13 +1008,85 @@ main:focus { outline: none; }
     .sweep > svg, .sweep-down > svg { clip-path: none !important; animation: none !important; }
     .originbar span { transition: none; }
 }
+
+/* The opening sweep: "Meclisin Dili" in dots on the dark, then the dots sweep away to the page.
+   Hidden unless the head script set html.opening (not "intro": that is the class of the chapters' lead paragraphs); the animation is a safety net, so a page whose
+   script fails is never left behind a dark sheet. */
+#intro { display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 100; background: #15140f; pointer-events: none; image-rendering: pixelated; }
+html.opening #intro { display: block; animation: introGone 0.01s 14s forwards; }
+@keyframes introGone { to { opacity: 0; visibility: hidden; } }
+
+/* ---------------------------------------------------------------- phones
+   The phone is a first-class screen: the QR code at the stand opens the page there. What
+   changes below is meant for a thumb and a small, bright screen, not a scaled-down desktop. */
+@media (max-width: 520px) {
+    .tm-full-btn { display: none; }   /* a screen this small has no room for the full-screen view's grid of words */
+    #zaman::before { opacity: calc(var(--grain, 0) * var(--grain-strength) * 0.4); }   /* the grain must not speckle the legend and the labels */
+    .quote blockquote { text-align: left !important; hyphens: manual; line-height: 2.1 !important; }
+    ruby.gloss rt { padding-bottom: 4px; }   /* clear of the ring around the old word */
+    .print-key { left: 16px; right: 16px; max-width: none; text-wrap: balance; }
+}
+/* Touch: a finger needs about 44px; a mouse does not. */
+@media (pointer: coarse) {
+    .toc a { padding-block: 13px; }
+    .btn { min-height: 44px; }
+    .chip, .picker select { min-height: 40px; }
+}
+
+/* ---------------------------------------------------------------- widescreen first
+   The charts are wide; the phone is recommended to be held sideways. In portrait on a phone
+   the first screen says so (dismissed once, remembered); in landscape the page is laid out
+   for a window that is short: less air above and below, a tighter menu. */
+.wide-hint { display: none; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1px solid var(--ink); border-radius: var(--round);
+    background: var(--surface); font-size: 0.95rem; color: var(--ink); max-width: 46ch; }
+.wide-hint svg { flex: none; color: var(--print-t); }
+.wide-hint span { flex: 1 1 14ch; }
+.wide-x { border: 0; background: none; font-size: 1.5rem; line-height: 1; padding: 6px 10px; cursor: pointer; color: var(--muted); }
+@media (max-width: 700px) and (orientation: portrait) {
+    .wide-hint:not([hidden]) { display: flex; }
+    html.wide-hint-on .print-key { display: none; }   /* the hint takes its place until it is dismissed */
+}
+html.sergibig .wide-hint { display: none !important; }
+@media (orientation: landscape) and (max-height: 520px) {
+    .hero { min-height: 0; --field: clamp(80px, 24vh, 130px); padding-top: 12px; }
+    .hero-in { gap: 10px; padding-block: 14px 8px; }
+    .hero h1 { font-size: clamp(2.4rem, 11vh, 3.6rem); }
+    .morph { font-size: clamp(1.5rem, 8vh, 2.3rem); }
+    .lede { font-size: 1rem; }
+    .toc { margin-top: 10px; }
+    .toc a { padding-block: 6px; }
+    .chapter { padding-block: 44px 16px; }
+    .chapter .head { margin-bottom: 18px; }
+    .panel { padding: 14px; }
+    .stat { padding-block: 12px; }
+}
+
+/* game 7: the words that can be chosen are dotted-underlined; chosen ones get a frame, then the verdict colours and the origin beneath */
+.origin-text { line-height: 2.1; font-size: calc(clamp(1.15rem, min(2.3vw, 3vh), 2.4rem) * var(--gs, 1)); }
+.origin-word { font: inherit; color: inherit; background: none; border: 0; padding: 0 2px; margin: 0; cursor: pointer; position: relative;
+    text-decoration: underline dotted; text-decoration-color: var(--print-t); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.origin-word:hover:not(:disabled) { background: color-mix(in srgb, var(--print) 14%, transparent); }
+.origin-word.on { outline: 2px solid var(--ink); outline-offset: 2px; background: color-mix(in srgb, var(--ink) 9%, transparent); text-decoration: none; }
+.origin-word:disabled { cursor: default; }
+.origin-word.right { color: var(--yes); outline: 2px solid var(--yes); outline-offset: 2px; text-decoration: none; background: color-mix(in srgb, var(--yes) 10%, transparent); }
+.origin-word.missed { outline-style: dashed; }
+.origin-word.wrong { color: var(--no); outline: 2px dashed var(--no); outline-offset: 2px; text-decoration: none; background: color-mix(in srgb, var(--no) 9%, transparent); }
+.origin-word.revealed:not(.right):not(.wrong) { text-decoration: none; }
+.origin-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 6px; font: 700 calc(clamp(0.95rem, min(1.3vw, 2vh), 1.35rem) * var(--gs, 1)) var(--type); }
+.origin-legend .ol { color: var(--origin); }
+.origin-legend .ol b { color: var(--ink); }
 </style>
 <!-- Everything above is the page's head: evo web ends the head and starts the body here. -->
 
 <a class="skip" href="#icerik">İçeriğe geç</a>
 <noscript><p class="noscript">Bu sayfanın grafikleri JavaScript ile çiziliyor. Görmek için tarayıcınızda JavaScript'i açın.</p></noscript>
-<script>if(!matchMedia("(prefers-reduced-motion: reduce)").matches && location.hash !== "#durgun") document.documentElement.classList.add("entrance");
+<script>if(!matchMedia("(prefers-reduced-motion: reduce)").matches && location.hash !== "#durgun") {
+    // The opening sweep (setupIntro) plays on every load, except at the stand's addresses and in the games;
+    // the first screen's entrance then starts when the sweep clears the way (and at once when there is no sweep).
+    document.documentElement.classList.add(/^#(sergi|sergibig|game)$/.test(location.hash) ? "entrance" : "opening");
+}
 if(location.hash === "#sergibig") document.documentElement.classList.add("sergibig");</script>
+<canvas id="intro" aria-hidden="true"></canvas>
 <canvas class="field" id="field" aria-hidden="true"></canvas>
 <header class="hero">
     <div class="wrap hero-bar">
@@ -1014,7 +1099,12 @@ if(location.hash === "#sergibig") document.documentElement.classList.add("sergib
             <span class="morph-old" id="morph-old"></span><span class="morph-arrow" id="morph-arrow"></span><span class="morph-new"><span id="morph-word"></span><span class="caret gone" id="caret"></span></span><span class="morph-year num plain" id="morph-year"></span>
         </div>
         <p class="lede" id="lede"></p>
-        <a class="cta" href="#zaman">Zaman makinesine geçin<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 4v12M5 11l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="wide-hint" id="wide-hint" hidden>
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20.5 8c1.4.8 2.2 2.2 2.2 4s-.8 3.2-2.2 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <span><b>Geniş ekran önerilir.</b> Grafikler yatay ekranda çok daha rahat okunur: telefonunuzu yan çevirin.</span>
+            <button type="button" class="btn" id="wide-go" hidden>Yatay tam ekran</button>
+            <button type="button" class="wide-x" id="wide-x" aria-label="Öneriyi kapat">×</button>
+        </div>
     </div>
     <canvas class="print" id="print" aria-hidden="true"></canvas>
     <p class="print-key" id="print-key"></p>
@@ -2013,6 +2103,7 @@ function setupField() {
         const pad = W > 520 ? 20 : 16, colLeft = (Math.max(0, (W - 1180) / 2) + pad) / DOT, colRight = cols - colLeft;
         // None on the first screen (it has its own field) or the numbers under it: they begin with the chapters.
         const first = document.querySelector(".toc").getBoundingClientRect().bottom + scrollY + 480;   // a blob reaches about 450px up
+        const list = [];   // the clusters, kept so the visible ones can drift (animate below)
         for(let y0 = first / DOT, k = 0; y0 < rows; y0 += (700 + 450 * rand()) / DOT, k++) {
             // a cluster: two to four balls around a centre near one edge, left and right in turn
             const cx = (k % 2 ? 0.97 : 0.03) * cols + (rand() - 0.5) * 0.06 * cols;
@@ -2020,6 +2111,7 @@ function setupField() {
                 x: cx + (rand() - 0.5) * 0.28 * unit, y: y0 + (rand() - 0.5) * 0.38 * unit, r2: ((0.09 + 0.09 * rand()) * unit) ** 2,
             }));
             const reach = 0.55 * unit;   // the box around the cluster where the field can matter
+            list.push({cx, y0, balls, reach, k});
             for(let y = Math.max(0, Math.floor(y0 - reach)); y < Math.min(rows, y0 + reach); y++) {
                 for(let x = Math.max(0, Math.floor(cx - reach)); x < Math.min(cols, cx + reach); x++) {
                     let f = 0;
@@ -2032,9 +2124,63 @@ function setupField() {
             }
         }
         g.putImageData(img, 0, 0);
+        FIELD.anim = {list, cols, rows, colLeft, colRight, W, pad, unit};
     };
     FIELD.redraw = draw;
     draw();
+    // The blobs drift: each ball wanders a little and swells and shrinks, so the dither at the
+    // page's edges is never quite still. Only the clusters on screen are drawn again, about
+    // twelve times a second, over the still picture (the same threshold, the same dots).
+    if(!(reduceMotion || location.hash === "#durgun")) {
+        let last = 0, t0 = 0;
+        const tick = now => {
+            requestAnimationFrame(tick);
+            const F = FIELD.anim;
+            if(!F || document.hidden || now - last < 80) return;
+            last = now;
+            const t = now / 1000, [cr, cg, cb] = FIELD.color, ink = (255 << 24) | (cb << 16) | (cg << 8) | cr;
+            if(!t0) t0 = t;
+            const ramp = Math.min(1, (t - t0) / 3);   // the fading starts gently, so nothing jumps on the first frame
+            const top = scrollY / DOT - 40, bottom = (scrollY + innerHeight) / DOT + 40;
+            const seen = F.list.filter(c => c.y0 + c.reach > top && c.y0 - c.reach < bottom);
+            const boxes = seen.map(c => {
+                const x0 = Math.max(0, Math.floor(c.cx - c.reach)), x1 = Math.min(F.cols, Math.ceil(c.cx + c.reach));
+                const y0 = Math.max(0, Math.floor(c.y0 - c.reach)), y1 = Math.min(F.rows, Math.ceil(c.y0 + c.reach));
+                return {c, x0, y0, w: x1 - x0, h: y1 - y0};
+            }).filter(b => b.w > 0 && b.h > 0);
+            for(const b of boxes) g.clearRect(b.x0, b.y0, b.w, b.h);   // all first, so overlapping boxes do not erase each other
+            for(const b of boxes) {
+                const c = b.c;
+                if(!c.tile || c.tile.width !== b.w || c.tile.height !== b.h) {
+                    c.tile = html("canvas", {width: b.w, height: b.h});
+                    c.tg = c.tile.getContext("2d");
+                    c.img = c.tg.createImageData(b.w, b.h);
+                    c.px = new Uint32Array(c.img.data.buffer);
+                }
+                c.px.fill(0);
+                const balls = c.balls.map((m, i) => ({
+                    x: m.x + Math.sin(t * 0.5 + i * 2.1 + c.k) * 0.035 * F.unit,
+                    y: m.y + Math.cos(t * 0.4 + i * 1.7 + c.k) * 0.03 * F.unit,
+                    r2: m.r2 * (1 + 0.18 * Math.sin(t * 0.7 + i * 1.3 + c.k)),
+                }));
+                const edge = (F.W > 520 ? 48 : F.pad) / DOT;
+                // Each cluster also fades out and back in, slowly and on its own beat: not by
+                // changing a colour but by thinning its dots through the Bayer threshold, so it
+                // dissolves into grain and gathers again, cell by cell.
+                const amp = 1 - ramp * 0.9 * (0.5 - 0.5 * Math.cos(t * 0.4 + c.k * 2.3));
+                for(let y = b.y0; y < b.y0 + b.h; y++) for(let x = b.x0; x < b.x0 + b.w; x++) {
+                    const inside = Math.min(x - F.colLeft, F.colRight - x), side = clamp(-inside / edge, 0, 1);
+                    if(side === 0) continue;
+                    let f = 0;
+                    for(const m of balls) f += m.r2 / ((x - m.x) ** 2 + (y - m.y) ** 2 + 1);
+                    if(0.34 * amp * side * clamp((f - 0.9) / 1.4, 0, 1) > bayerAt(x, y)) c.px[(y - b.y0) * b.w + (x - b.x0)] = ink;
+                }
+                c.tg.putImageData(c.img, 0, 0);
+                g.drawImage(c.tile, b.x0, b.y0);
+            }
+        };
+        requestAnimationFrame(tick);
+    }
     // the page grows as its charts are drawn and its sections open: draw again when its height changes
     let height = document.documentElement.scrollHeight, timer = 0;
     new ResizeObserver(() => {
@@ -2157,12 +2303,17 @@ function drawPrint() {
     // fonts arriving, a new size) only changes the field the wave shows.
     PRINT_IN.show = show;
     if(PRINT_IN.start === undefined) {
-        PRINT_IN.start = document.documentElement.classList.contains("entrance") ? performance.now() + 300 : -Infinity;
+        // Behind the opening sheet the field waits empty (start = Infinity); setupIntro calls
+        // PRINT_IN.play() when the sheet starts to lift, so the wave of dots rises as it clears.
+        const cl = document.documentElement.classList;
+        PRINT_IN.start = cl.contains("entrance") ? performance.now() + 300 : cl.contains("opening") ? Infinity : -Infinity;
         const step = now => {
             const p = clamp((now - PRINT_IN.start) / 2000, 0, 1);
             PRINT_IN.show(p);
             if(p < 1) requestAnimationFrame(step);
         };
+        // starts a beat after the dark begins to lift
+        PRINT_IN.play = () => { PRINT_IN.start = performance.now() + 450; requestAnimationFrame(step); };
         requestAnimationFrame(step);
     }
     show(clamp((performance.now() - PRINT_IN.start) / 2000, 0, 1));
@@ -2549,7 +2700,7 @@ function voiceOfYear(t) {
 function drawTimeline() {
     const box = document.getElementById("timeline");
     const narrow = box.clientWidth < 600;
-    const rowH = narrow ? 17 : 19, top = 84, labelW = narrow ? 92 : 210;
+    const rowH = narrow ? 20 : 22, top = narrow ? 44 : 84, labelW = narrow ? 100 : 228;   // narrow: one note, not two labels
     const [s, w] = newSvg(box, top + CROSSED.length * rowH + 30);
     const x = scale(1918, 2026, labelW + 10, w - 10);
     const bottom = top + CROSSED.length * rowH;
@@ -2560,9 +2711,9 @@ function drawTimeline() {
         const g = svg("g", {class: "row", style: "cursor: pointer", tabindex: 0, role: "button",
                             "aria-label": `${c.label}: geçiş yılı ${Math.round(f.crossover)}. Ayrıntı için seçin.`}, s);
         if(i % 2 === 0) svg("rect", {x: 0, y: y - rowH / 2, width: w, height: rowH, fill: css("--line"), opacity: 0.35}, g);
-        svg("text", {x: labelW, y: y + 4, "text-anchor": "end", "font-size": narrow ? 11 : 12.5, class: "label"}, g).textContent = narrow ? c.newWord : c.label;
+        svg("text", {x: labelW, y: y + 4, "text-anchor": "end", "font-size": narrow ? 12.5 : 14, class: "label"}, g).textContent = narrow ? c.newWord : c.label;
         if(f.lo !== null) svg("line", {x1: x(f.lo), x2: x(f.hi), y1: y, y2: y, stroke: col, "stroke-width": 3, opacity: f.uncertain ? 0.25 : 0.45, "stroke-linecap": "round"}, g);
-        const r = Math.min(rowH * 0.36, 3.5 + 1.4 * Math.log10(f.uses + 1));
+        const r = Math.min(rowH * 0.36, 4 + 1.4 * Math.log10(f.uses + 1));
         if(f.status === 1) svg("circle", {cx: x(f.crossover), cy: y, r: r - 1, fill: css("--surface"), stroke: col, "stroke-width": 2.5}, g);
         else svg("circle", {cx: x(f.crossover), cy: y, r, fill: col, opacity: f.uncertain ? 0.45 : 1}, g);
         svg("rect", {x: 0, y: y - rowH / 2, width: w, height: rowH, class: "hit"}, g);   // the pointer's target, tinted under it
@@ -2674,7 +2825,7 @@ function drawConcept(glide) {
     const c = current, f = c.fit, box = document.getElementById("concept");
     const before = glide && !STILL ? chartShapes(box) : null;
     const narrow = box.clientWidth < 600;
-    const top = narrow ? 52 : 80, h = narrow ? 300 : 400;   // narrow: the legend, then the periods' note
+    const top = narrow ? 62 : 80, h = narrow ? 300 : 400;   // narrow: the legend, then the periods' note (clear of the %100 label)
     const [s, w] = newSvg(box, top + h + 36);
     const x = scale(1918, 2026, 44, w - 12), y = scale(0, 1, top + h, top);
     for(let v = 0; v <= 1; v += 0.25) {
@@ -2854,7 +3005,7 @@ function drawQuotes() {
 function drawHeatmap() {
     const box = document.getElementById("heatmap");
     const narrow = box.clientWidth < 600;
-    const labelW = narrow ? 84 : 200, top = narrow ? 40 : 96, rowH = narrow ? 11 : 13, keyH = 30;
+    const labelW = narrow ? 92 : 216, top = narrow ? 40 : 96, rowH = narrow ? 13 : 15, keyH = 30;
     const w = box.clientWidth, h = top + ORDER.length * rowH + 40;
     box.textContent = "";
     const cv = html("canvas", {role: "img", "aria-label": chartName(box)}, box);
@@ -2865,7 +3016,7 @@ function drawHeatmap() {
     const x = scale(1920, L + 1, labelW + 8, w - 6);
     const old = hexRgb(css("--old")), even = hexRgb(css("--even")), neu = hexRgb(css("--new"));
     const color = p => { const a = p < 0.5 ? old : even, b = p < 0.5 ? even : neu, t = p < 0.5 ? p * 2 : (p - 0.5) * 2; return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",")})`; };
-    g.font = `${narrow ? 10 : 11.5}px ${css("--body")}`;
+    g.font = `${narrow ? 11.5 : 13}px ${css("--body")}`;
     g.textAlign = "right";
     g.textBaseline = "middle";
     ORDER.forEach((c, i) => {
@@ -4079,6 +4230,158 @@ function writeFacts() {
     });
 }
 
+
+
+// ---------------------------------------------------------------- widescreen hint
+
+// A phone held upright is told, once, that the page reads best sideways. On Android the
+// hint also offers the full-screen view locked to landscape (the browsers that cannot lock the
+// orientation, iPhone's among them, simply do not get the button). The CSS decides when it shows.
+function setupWideHint() {
+    const box = document.getElementById("wide-hint"), x = document.getElementById("wide-x"), go = document.getElementById("wide-go");
+    if(!box) return;
+    let seen = false;
+    try { seen = localStorage.getItem("wide-hint") === "1"; } catch(e) {}
+    if(!seen) { box.hidden = false; document.documentElement.classList.add("wide-hint-on"); }
+    x.addEventListener("click", () => {
+        box.hidden = true;
+        document.documentElement.classList.remove("wide-hint-on");
+        try { localStorage.setItem("wide-hint", "1"); } catch(e) {}
+    });
+    if(screen.orientation && screen.orientation.lock && document.documentElement.requestFullscreen) {
+        go.hidden = false;
+        go.addEventListener("click", async () => {
+            try {
+                await document.documentElement.requestFullscreen();
+                await screen.orientation.lock("landscape");
+            } catch(e) { go.hidden = true; }   // refused: the hint's text still stands
+        });
+    }
+}
+
+// ---------------------------------------------------------------- the opening sweep
+
+// On every load: the name in dots on the dark, melting into a scatter below the letters, then a
+// sweep from left to right takes the dark away cell by cell (ordered dithering, the same Bayer
+// matrix as the printed type) and shows the page. Any key, touch or wheel skips to the sweep.
+// Not played with reduced motion, #durgun, the stand's addresses or the games (the head script).
+async function setupIntro() {
+    const root = document.documentElement, cv = document.getElementById("intro");
+    if(!cv || !root.classList.contains("opening")) return;
+    // While the sheet covers the page, nothing under it takes focus or is read out.
+    const under = [...document.body.children].filter(el => el !== cv && el.tagName !== "SCRIPT");
+    under.forEach(el => { el.inert = true; });
+    cv.removeAttribute("aria-hidden");
+    cv.setAttribute("role", "img");
+    cv.setAttribute("aria-label", "Meclisin dili");
+    const end = () => { under.forEach(el => { el.inert = false; }); root.classList.remove("opening"); cv.remove(); };
+    try {
+        const W = innerWidth, H = innerHeight, cols = Math.ceil(W / DOT), rows = Math.ceil(H / DOT);
+        const family = getComputedStyle(document.querySelector(".hero h1")).fontFamily;
+        // Wait for the fonts and for the page's own first printing (drawAll runs when the fonts are
+        // ready): the sweep starts on a quiet main thread, so it never stutters or skips frames.
+        if(document.fonts) await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]);
+        await new Promise(r => setTimeout(r, 50));
+        // The words, once, on a small canvas with one pixel per cell: "Meclisin" in the red
+        // channel and "Dili" in the green, so a cell's colour is known from what covers it.
+        const src = html("canvas", {width: cols, height: rows}), g = src.getContext("2d", {willReadFrequently: true});
+        const two = W < 700;
+        g.font = `900 100px ${family}`;
+        const wide = two ? Math.max(g.measureText("Meclisin").width, g.measureText("Dili").width)
+                         : g.measureText("Meclisin Dili").width;
+        const size = Math.min(0.84 * W / wide * 100, H * (two ? 0.2 : 0.3)) / DOT;   // in cells
+        g.font = `900 ${size}px ${family}`;
+        g.textBaseline = "alphabetic";
+        g.globalCompositeOperation = "lighter";
+        const lineH = size * 1.05, space = g.measureText(" ").width;
+        const m = g.measureText("Meclisin").width, d = g.measureText("Dili").width;
+        let mx, dx, my, dy;
+        if(two) { mx = (cols - m) / 2; dx = (cols - d) / 2; my = rows * 0.44 - lineH * 0.1; dy = my + lineH; }
+        else { mx = (cols - (m + space + d)) / 2; dx = mx + m + space; my = dy = rows * 0.42 + size * 0.3; }   // above the middle: the dots melting under the letters weigh the picture down
+        g.fillStyle = "#f00"; g.fillText("Meclisin", mx, my);
+        g.fillStyle = "#0f0"; g.fillText("Dili", dx, dy);
+        const px = g.getImageData(0, 0, cols, rows).data;
+        const foot = Math.max(my, dy), reach = rows * 0.3;   // the dots below the letters thin out over this many rows
+        // How much of each column the letters cover (smoothed over 5 columns): the scatter below
+        // the letters falls from the strokes, so it is dense under a stem and absent under a gap.
+        const cover = new Float32Array(cols);
+        for(let x = 0; x < cols; x++) { let n = 0; for(let y = 0; y < rows; y++) n += Math.max(px[(y * cols + x) * 4], px[(y * cols + x) * 4 + 1]) > 127 ? 1 : 0; cover[x] = Math.min(1, n / (size * 0.9)); }
+        const soft = cover.map((_, x) => { let a = 0; for(let k = -2; k <= 2; k++) a += cover[clamp(x + k, 0, cols - 1)]; return a / 5; });
+        const ink = new Uint8Array(cols * rows);   // 0 none, 1 paper, 2 orange
+        for(let y = 0; y < rows; y++) for(let x = 0; x < cols; x++) {
+            const i = y * cols + x, r = px[i * 4], gr = px[i * 4 + 1];
+            let tone = 1;
+            if(y > foot - size * 0.35) tone = 1 - clamp((y - (foot - size * 0.35)) / (size * 0.35), 0, 1) * 0.5;   // the foot of the letters thins
+            if(Math.max(r, gr) / 255 * tone > bayerAt(x, y)) ink[i] = gr > r ? 2 : 1;
+            else if(y > foot) {
+                const fall = Math.pow(1 - clamp((y - foot) / (reach * (0.4 + 0.6 * soft[x])), 0, 1), 1.5);
+                if(soft[x] * 0.9 * fall > bayerAt(x + 3, y + 5)) ink[i] = x > dx - 2 ? 2 : 1;
+            }
+        }
+        const ctx = cv.getContext("2d"), img = ctx.createImageData(cols, rows), out = new Uint32Array(img.data.buffer);
+        cv.width = cols; cv.height = rows;
+        const DARK = 0xFF0F1415, PAPER = 0xFFD8E6EC, ORANGE = 0xFF0C59E8;   // ABGR: #15140f, #ece6d8, #e8590c
+        const DUST = 0xFF3A464A;   // the dark sheet's own grain: #4a463a, a dim paper tone
+        // The sheet is not flat: a field of dots drifts across it, denser towards the foot like the
+        // poster's noise. It is a sum of two moving waves (one list per column and per row, so a
+        // frame costs little), thresholded by the Bayer matrix, and swept away with the dark.
+        const foot2 = new Float32Array(rows), a1 = new Float32Array(cols), a2 = new Float32Array(cols), b1 = new Float32Array(rows), b2 = new Float32Array(rows);
+        for(let y = 0; y < rows; y++) foot2[y] = 0.06 + 0.5 * Math.pow(y / rows, 1.7);
+        const REVEAL = 1100, HOLD = 600, CLEAR = 1200, LATER = 550;   // the words leave in CLEAR; the dark follows the same wave LATER ms behind
+        // The title stays until the page behind it has finished loading (the load event, the fonts,
+        // one printing of the headings). Only the wait is new: the words and the sweep are as before.
+        let ready = false, wall = 0;
+        const loaded = document.readyState === "complete" ? Promise.resolve() : new Promise(r => addEventListener("load", r, {once: true}));
+        Promise.race([loaded, new Promise(r => setTimeout(r, 8000))])
+            .then(() => document.fonts && document.fonts.ready)
+            .then(() => new Promise(r => requestAnimationFrame(() => setTimeout(r, 60))))
+            .then(() => { ready = true; });
+        let t0 = 0, last = 0, elapsed = 0, skipAt = 0, started = false, risen = false, skipped = false;
+        const skip = () => { if(!skipAt) skipAt = performance.now(); };
+        for(const ev of ["keydown", "pointerdown", "wheel", "touchstart"]) addEventListener(ev, skip, {once: true, passive: true});
+        const frame = now => {
+            if(!t0) { t0 = now; last = now; }
+            const dt = Math.min(now - last, 50);   // a slow frame never jumps the sweep ahead
+            last = now;
+            wall += dt;   // the sheet's own grain keeps drifting while the title waits
+            if(elapsed < REVEAL + HOLD || ready || skipAt) elapsed += dt;
+            if(skipAt && !skipped) {   // a key or touch: the words are enough, go straight to the sweep
+                skipped = true;
+                elapsed = Math.max(elapsed, REVEAL + HOLD);
+            }
+            const t = elapsed;
+            const tc = (t - REVEAL - HOLD) / CLEAR;   // below 0 while the title shows, 0..1 during the sweep
+            const td = (t - REVEAL - HOLD - LATER) / CLEAR;   // the dark's clock: the words' wave, a little later
+            if(td >= 1.0) { end(); return; }
+            if(tc >= 0 && !started) { started = true; root.classList.add("entrance"); }
+            // the first screen's field of dots rises as the dark lifts, on the same wave from the left
+            if(td >= 0 && !risen) { risen = true; if(PRINT_IN.play) PRINT_IN.play(); }
+            const tr = Math.min(1, t / REVEAL);
+            for(let x = 0; x < cols; x++) { a1[x] = Math.sin(x * 0.045 + wall * 0.0016); a2[x] = Math.sin(x * 0.017 - wall * 0.0009); }
+            for(let y = 0; y < rows; y++) { b1[y] = Math.cos(y * 0.035 - wall * 0.0012); b2[y] = Math.cos(y * 0.012 + wall * 0.0007); }
+            for(let y = 0; y < rows; y++) for(let x = 0; x < cols; x++) {
+                const i = y * cols + x, u = x / cols, b = bayerAt(x, y);
+                let c = foot2[y] * (0.5 + 0.25 * (a1[x] * b1[y] + a2[x] * b2[y])) > b ? DUST : DARK;
+                // The dark is gone here: the same wave as the words (left to right, the same dither
+                // band), only LATER: the letters dissolve first and the dark follows right behind them.
+                const gone = td >= 0 && td * 1.2 > u * 0.8 + b * 0.2;
+                const word = ink[i] && tr * 1.3 > u * 0.7 + b * 0.3 && !(tc >= 0 && tc * 1.2 > u * 0.8 + b * 0.2 - 0.1);
+                out[i] = word ? (ink[i] === 2 ? ORANGE : PAPER) : gone ? 0 : c;
+            }
+            ctx.putImageData(img, 0, 0);
+            // The sheet's own dark (the CSS background, there before the script runs) must go once
+            // the canvas paints the dark itself; left in place it showed through the cleared cells
+            // and then vanished all at once.
+            if(!cv.style.background) cv.style.background = "transparent";
+            requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+    } catch(e) {
+        root.classList.add("entrance");
+        end();
+    }
+}
+
 // ---------------------------------------------------------------- motion
 
 // Plays each chart's entrance once, when it is first seen; with reduced motion, nothing moves.
@@ -4278,6 +4581,8 @@ setupMotion();
 setupProgress();
 setupScrolling();
 setupSmoothWheel();
+setupWideHint();
+setupIntro();
 
 // Redraw when the width or the theme changes.
 let lastWidth = document.body.clientWidth, resizeTimer = 0;
@@ -4323,6 +4628,7 @@ function setupWordHover() {
         if(!el || ev.target.closest(HOVER_SKIP)) { if(HOVER.mine) close(); return; }
         const hit = wordAt(ev.clientX, ev.clientY);
         const tip = hit && (VOCAB.has(hit.w) ? wordTip(VOCAB.get(hit.w)) : FORM.has(hit.w) ? formTip(hit.w) : null);
+        document.documentElement.classList.toggle("on-word", !!(hit && VOCAB.has(hit.w)));   // the pointer says it can be clicked
         if(!tip) { if(HOVER.mine) close(); return; }
         const key = hit.w + ":" + Math.round(hit.box.left) + ":" + Math.round(hit.box.top);
         const show = () => {
@@ -4337,6 +4643,50 @@ function setupWordHover() {
         else HOVER.timer = setTimeout(show, 180);   // a resting pointer, not one passing over the text
     }, {passive: true});
     addEventListener("scroll", close, {passive: true});
+    // A word of the database is a button of sorts: the pointer says so, and a click opens its
+    // hundred years in the search (the tip on hover has said the same in a sentence).
+    document.addEventListener("click", ev => {
+        const el = ev.target.closest && ev.target.closest(HOVER_TEXT);
+        if(!el || ev.target.closest(HOVER_SKIP) || (getSelection() && String(getSelection()))) return;
+        const hit = wordAt(ev.clientX, ev.clientY);
+        if(hit && VOCAB.has(hit.w)) searchFor([hit.w]);
+    });
+    setupWordMarks();
+}
+// The words of the database (the search's words) underlined with dots in the running text, so
+// that it is seen which ones can be tapped. The CSS Custom Highlight API draws them over the
+// text without touching it; the ranges are made for the paragraphs on screen, and again when
+// the page's text changes. Browsers without it keep the tips on hover.
+function setupWordMarks() {
+    if(!window.CSS || !CSS.highlights || typeof Highlight === "undefined") return;
+    const hl = new Highlight(), shown = new Set();
+    CSS.highlights.set("vocab", hl);
+    let done = new WeakSet();
+    const mark = el => {
+        if(done.has(el) || el.closest(HOVER_SKIP)) return;
+        done.add(el);
+        const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for(let n; (n = walk.nextNode());) {
+            if(n.parentElement.closest(HOVER_SKIP)) continue;
+            for(const m of n.nodeValue.matchAll(/\p{L}{3,}/gu)) {
+                if(!VOCAB.has(fold(m[0]))) continue;
+                const r = new Range();
+                r.setStart(n, m.index);
+                r.setEnd(n, m.index + m[0].length);
+                hl.add(r);
+            }
+        }
+    };
+    const seen = new IntersectionObserver(entries => entries.forEach(e => {
+        if(e.isIntersecting) { shown.add(e.target); mark(e.target); } else shown.delete(e.target);
+    }), {rootMargin: "200px 0px"});
+    const watchAll = () => document.querySelectorAll(HOVER_TEXT).forEach(el => seen.observe(el));
+    watchAll();
+    let timer = 0;
+    new MutationObserver(() => {   // new text (a chart's sentences, the typed lines): mark again
+        clearTimeout(timer);
+        timer = setTimeout(() => { hl.clear(); done = new WeakSet(); watchAll(); shown.forEach(mark); }, 250);
+    }).observe(document.querySelector("main") || document.body, {childList: true, subtree: true, characterData: true});
 }
 
 // ---------------------------------------------------------------- the games (#game)
@@ -4363,7 +4713,7 @@ function gameScore() {
     if(!board) return;
     const mode = GAME.mode, streak = mode === "sik" || mode === "sikyeni";
     const to = mode === "yil" ? [GAME.me, GAME.machine] : streak ? [GAME.me, GAME.best || 0] : mode === "sira" ? [GAME.me] : [GAME.me, GAME.answered || 0];
-    const text = n => mode === "yil" ? `SİZ ${n[0]} · PROGRAM ${n[1]}` : streak ? `ÜST ÜSTE ${n[0]} · EN İYİ ${n[1]}` : mode === "sira" ? `PUAN ${n[0]}` : `DOĞRU ${n[0]} / ${n[1]}`;
+    const text = n => mode === "yil" ? `SİZ ${n[0]} · PROGRAM ${n[1]}` : streak ? `ÜST ÜSTE ${n[0]} · EN İYİ ${n[1]}` : mode === "sira" ? `PUAN ${n[0]}` : (n[1] ? `DOĞRU ${n[0]} / ${n[1]}` : "SIRA SİZDE");
     const from = GAME.shownMode === mode && GAME.shown && GAME.shown.length === to.length ? GAME.shown : to;
     GAME.shown = to;
     GAME.shownMode = mode;
@@ -4420,7 +4770,7 @@ function gameMenu() {
     document.getElementById("game-back").hidden = true;
     const body = document.getElementById("game-body");
     body.innerHTML = `<h1 class="game-title">Meclisin dili: oyun</h1>
-        <p class="game-lede">Yüz yıllık tutanaklardan gerçek cümleler ve sözcükler. Altı oyun.</p>
+        <p class="game-lede">Yüz yıllık tutanaklardan gerçek cümleler ve sözcükler. Yedi oyun.</p>
         <div class="game-modes">
             <button class="game-mode" type="button" data-mode="yil"><i>OYUN 1</i><b>Hangi yıldan?</b><span>Tutanaklardan bir cümle: yılını tahmin edin. Programın tahminiyle yarışın.</span></button>
             <button class="game-mode" type="button" data-mode="yeni"><i>OYUN 2</i><b>Hangisi daha yeni?</b><span>Aynı anlama gelen iki sözcük: hangisi sonradan geldi?</span></button>
@@ -4428,6 +4778,7 @@ function gameMenu() {
             <button class="game-mode" type="button" data-mode="sik"><i>OYUN 4</i><b>Hangisi daha sık?</b><span>İki sözcük, bir on yıl: hangisi mecliste daha çok geçti? Yanlış yapınca seri sıfırlanır.</span></button>
             <button class="game-mode" type="button" data-mode="sikyeni"><i>OYUN 5</i><b>Eski mi, yeni mi: hangisi daha sık?</b><span>Aynı anlama gelen eski ve yeni sözcük, bir on yıl: o yıllarda hangisi daha çok söylendi?</span></button>
             <button class="game-mode" type="button" data-mode="sira"><i>OYUN 6</i><b>Sıraya dizin</b><span>Dört gerçek cümle karışık geldi: en eskiden en yeniye dizin.</span></button>
+            <button class="game-mode" type="button" data-mode="koken"><i>OYUN 7</i><b>Türkçe olanları seçin</b><span>Gerçek bir cümle, bazı sözcükleri işaretli: hangileri Türkçe kökenli? Gerisi Arapça, Farsça ya da Batı dillerinden.</span></button>
         </div>`;
     body.querySelectorAll(".game-mode").forEach(b => b.addEventListener("click", () => startGame(b.dataset.mode)));
     printGame();
@@ -4438,6 +4789,7 @@ function gameItems(mode) {
     if(mode === "sik") return frequencyItems();
     if(mode === "sikyeni") return pairFrequencyItems();
     if(mode === "sira") return orderItems();
+    if(mode === "koken") return originItems();
     if(mode === "bosluk") return blankItems();
     if(mode === "yil") {
         // five sentences from five different twenty-year stretches, so a batch spans the century
@@ -4489,6 +4841,7 @@ function nextRound() {
     else if(GAME.mode === "bosluk") blankRound(body, item);
     else if(GAME.mode === "sik" || GAME.mode === "sikyeni") frequencyRound(body, item);
     else if(GAME.mode === "sira") orderRound(body, item);
+    else if(GAME.mode === "koken") originRound(body, item);
     else newerRound(body, item);
     printGame();
 }
@@ -4564,7 +4917,7 @@ function frequencyRound(body, p) {
         const tag = w => p.pair ? (w === p.a ? " (eski)" : " (yeni)") : "";   // in the second version: which is the old one
         const rate = w => nf.format(Math.round(w === p.a ? p.ra : p.rb)), times = p.ratio.toLocaleString("tr-TR", {maximumFractionDigits: 1});
         const r = html("div", {class: "game-reveal"}, body);
-        r.innerHTML = `<div class="big">${ok ? "Doğru" : "Yanlış"}: ${esc(more)}</div>
+        r.innerHTML = `<div class="big verdict ${ok ? "ok" : "no"}">${ok ? "✓ Doğru" : "✕ Yanlış"}: ${esc(more)}</div>
             <p>${decadeName(p.d, true)} milyon sözcükte geçme sayısı: ${times} kat.</p>`;
         // the two rates as two bars that grow to their lengths: the ratio is seen, not only read
         const bars = html("div", {class: "game-bars"}, r), top = Math.max(p.ra, p.rb);
@@ -4583,6 +4936,95 @@ function frequencyRound(body, p) {
         next.addEventListener("click", nextRound);
         next.focus({preventScroll: true});
     }));
+}
+// ---- game 7: a real sentence of the record. The words of the database in it (the ones the
+// origin chart knows) are underlined with dots: those can be chosen. The visitor taps the ones
+// that are of Turkish origin and presses Tamam; every chosen word then shows its right origin
+// in its colour. A round is right when every Turkish word is chosen and no other. The origins
+// are the page's own (Vikisözlük); words whose origin in the data is doubtful are not offered.
+const ORIGIN_DOUBT = new Set(["sovyet", "anlam", "olmak"]);
+function originOf(word) {   // the origin index of a word that can be chosen, or -1
+    const i = VOCAB.get(fold(word));
+    if(i === undefined || [...word].length < 4 || ORIGIN_DOUBT.has(fold(word)) || RACE_SKIP.has(fold(word))) return -1;
+    const o = D.vocab.o[i];
+    return o <= 3 ? o : -1;   // "diğer" is not asked
+}
+function originItems() {
+    const out = [];
+    for(const t of shuffle(gameSentences())) {
+        if(t.text.length > 190) continue;
+        // a clean sentence: nearly every word is one the lexicon knows (the scans' misreadings are
+        // not offered), and it does not begin or end in the middle of a word
+        const all = t.text.match(/\p{L}{2,}/gu) || [];
+        const known = w => VOCAB.has(fold(w)) || FORM.has(fold(w));
+        if(all.length < 6 || all.filter(known).length < 0.8 * all.length || !known(all[0]) || !known(all[all.length - 1])) continue;
+        const words = (t.text.match(/\p{L}+/gu) || []).map(originOf).filter(o => o >= 0);
+        const turkish = words.filter(o => o === 2).length;
+        if(words.length < 4 || words.length > 9 || turkish < 1 || turkish === words.length) continue;
+        out.push(t);
+        if(out.length === 6) break;
+    }
+    return out;
+}
+function originRound(body, t) {
+    html("h2", {class: "game-title"}, body, "Hangi sözcükler Türkçe kökenli?");
+    html("p", {class: "game-lede"}, body, "Noktalı çizgili sözcükler seçilebilir: Türkçe kökenli olanlara dokunun, sonra Tamam'a basın. Örneğin \"mesele\" Arapça, \"ikinci\" Türkçe kökenlidir.");
+    const text = html("p", {class: "game-text origin-text"}, body);
+    let over = false;
+    const words = [];
+    let last = 0;
+    for(const m of t.text.matchAll(/\p{L}+/gu)) {
+        const o = originOf(m[0]);
+        if(o < 0) continue;
+        text.append(t.text.slice(last, m.index));
+        const b = html("button", {class: "origin-word", type: "button", "aria-pressed": "false"}, text, m[0]);
+        b.addEventListener("click", () => {
+            if(over) return;
+            const on = b.getAttribute("aria-pressed") !== "true";
+            b.setAttribute("aria-pressed", String(on));
+            b.classList.toggle("on", on);
+            SFX.tick(false);
+        });
+        words.push({b, o});
+        last = m.index + m[0].length;
+    }
+    text.append(t.text.slice(last));
+    const actions = html("div", {class: "game-actions"}, body);
+    const ok = html("button", {class: "btn primary game-ok", type: "button"}, actions, "Tamam");
+    ok.addEventListener("click", () => {
+        over = true;
+        let wrong = 0, missed = 0;
+        words.forEach(({b, o}) => {
+            const turk = o === 2, on = b.classList.contains("on");
+            b.disabled = true;
+            b.classList.add("revealed");
+            b.style.setProperty("--origin", `var(${ORIGIN_TEXT[o]})`);
+            if(turk) { b.classList.add("right"); if(!on) { b.classList.add("missed"); missed++; } }
+            else if(on) { b.classList.add("wrong"); wrong++; }
+        });
+        const perfect = !wrong && !missed;
+        GAME.answered++;
+        if(perfect) GAME.me++;
+        gameScore();
+        actions.remove();
+        const r = html("div", {class: "game-reveal"}, body);
+        r.innerHTML = `<div class="big verdict ${perfect ? "ok" : "no"}">${perfect ? "✓ Hepsini buldunuz" : `✕ ${wrong ? wrong + " yanlış" : ""}${wrong && missed ? ", " : ""}${missed ? missed + " kaçırılan" : ""}`}</div>` +
+            `<p>${t.y}, ${esc(sittingName(t.id))}.</p>`;
+        // the origins as a line of their own, in the origin colours (not as labels squeezed under the words)
+        const legend = html("div", {class: "origin-legend"}, r);
+        words.forEach(({b, o}) => {
+            const on = b.classList.contains("on"), item = html("span", {class: "ol"}, legend);
+            item.style.setProperty("--origin", `var(${ORIGIN_TEXT[o]})`);
+            html("b", {}, item, b.textContent);
+            item.append(` ${ORIGINS[o]}` + (o === 2 && !on ? " · kaçırdınız" : o !== 2 && on ? " · Türkçe değil" : ""));
+        });
+        r.querySelector(".big").classList.add("stamped");
+        printGame();
+        SFX.stamp();
+        const next = html("button", {class: "btn primary", type: "button"}, html("div", {class: "game-actions"}, body), "Sonraki cümle");
+        next.addEventListener("click", nextRound);
+        next.focus({preventScroll: true});
+    });
 }
 // ---- game 5: four real sentences from four different decades arrive mixed; the visitor drags
 // them into order, newest on top, and presses Tamam. Points: the pairs of sentences in the right
@@ -4632,8 +5074,13 @@ function orderRound(body, set) {
             drag = {c, id: ev.pointerId, grab: ev.clientY - (r.top + r.height / 2)};
             try { c.b.setPointerCapture(ev.pointerId); } catch(e) { /* a synthetic pointer */ }
             c.b.classList.add("dragging");
+            // Moving a card in the list takes its pointer capture away, and a quick drag then
+            // lost the card. The window follows the pointer instead, for as long as it is down.
+            window.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", drop);
+            window.addEventListener("pointercancel", drop);
         });
-        c.b.addEventListener("pointermove", ev => {
+        const move = ev => {
             if(!drag || drag.c !== c || ev.pointerId !== drag.id) return;
             const want = ev.clientY - drag.grab;   // where the card's centre should be
             const before = [...list.children].indexOf(c.b);
@@ -4644,16 +5091,17 @@ function orderRound(body, set) {
             const r = c.b.getBoundingClientRect();
             c.b.style.transform = `translateY(${want - (r.top + r.height / 2)}px)`;
             if([...list.children].indexOf(c.b) !== before) { numbers(); SFX.tick(false); }
-        });
+        };
         const drop = ev => {
             if(!drag || drag.c !== c) return;
             drag = null;
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", drop);
+            window.removeEventListener("pointercancel", drop);
             c.b.style.transform = "";
             c.b.classList.remove("dragging");
             numbers();
         };
-        c.b.addEventListener("pointerup", drop);
-        c.b.addEventListener("pointercancel", drop);
         c.b.addEventListener("keydown", ev => {   // the keyboard: arrows move the card up and down
             if(over || (ev.key !== "ArrowUp" && ev.key !== "ArrowDown")) return;
             ev.preventDefault();
@@ -4720,7 +5168,7 @@ function blankRound(body, it) {
     const head = html("div", {class: "tt-head"}, page);
     html("span", {}, head, "T.B.M.M. Tutanak Dergisi");
     html("span", {class: "num"}, head, "Yıl: " + it.y);
-    const sitting = html("div", {class: "tt-sitting"}, page, "Dönem ?, Cilt ?, Birleşim ?");
+    const sitting = html("div", {class: "tt-sitting"}, page, "Dönem ▒▒, Cilt ▒▒, Birleşim ▒▒");
     const text = html("blockquote", {class: "game-text"}, page);
     const before = html("span", {}, text), blank = html("span", {class: "game-blank"}, text, "\u00a0"), after = html("span", {}, text);
     typewrite([{el: before, text: "…" + it.b}, {el: after, text: it.a + "…"}]);
@@ -4739,7 +5187,7 @@ function blankRound(body, it) {
         // how much of this meaning's use that year was the word that was said
         const pNew = Math.round(100 * observed(it.c, it.y)), share = clamp(it.role === "new" ? pNew : 100 - pNew, 1, 99);
         const r = html("div", {class: "game-reveal"}, body);
-        r.innerHTML = `<div class="big">${ok ? "Doğru" : "Yanlış"}: ${esc(it.right)}</div>
+        r.innerHTML = `<div class="big verdict ${ok ? "ok" : "no"}">${ok ? "✓ Doğru" : "✕ Yanlış"}: ${esc(it.right)}</div>
             <p>${locative(it.y)} bu anlamın %${share}'${numberSuffix(share, "poss")} <b>${esc(it.right)}</b> sözcüğüyle söyleniyordu. Kaynak: ${esc(sittingName(it.id))}.</p>`;
         r.querySelector(".big").classList.add("stamped");
         printGame();
@@ -4755,18 +5203,21 @@ function yearRound(body, t) {
     const page = html("figure", {class: "game-page"}, body);
     const head = html("div", {class: "tt-head"}, page);
     html("span", {}, head, "T.B.M.M. Tutanak Dergisi");
-    const yearTag = html("span", {class: "num"}, head, "Yıl: ????");
-    const sitting = html("div", {class: "tt-sitting"}, page, "Dönem ?, Cilt ?, Birleşim ?");
+    const yearTag = html("span", {class: "num"}, head, "Yıl: ▒▒▒▒");
+    const sitting = html("div", {class: "tt-sitting"}, page, "Dönem ▒▒, Cilt ▒▒, Birleşim ▒▒");
     const text = html("blockquote", {class: "game-text"}, page);
     typewrite([{el: text, text: "“" + t.text + "”"}]);
     const guess = html("div", {class: "game-guess"}, body);
     const year = html("span", {class: "game-year num"}, guess, "1970");
     const fit = () => {   // as wide as the widest of the years 1920–2023, in its own font
+        // measured at 100px and set in em: the size of the number changes when the game steps
+        // its sizes down to fit the window (--gs), and a width in pixels then let the digits
+        // run into the slider
         const g = html("canvas").getContext("2d"), cs = getComputedStyle(year);
-        g.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        g.font = `${cs.fontWeight} 100px ${cs.fontFamily}`;
         let widest = 0;
         for(let y = 1920; y <= L; y++) widest = Math.max(widest, g.measureText(String(y)).width);
-        year.style.width = Math.ceil(widest) + "px";
+        year.style.width = (widest / 100 + 0.06).toFixed(3) + "em";
     };
     fit();
     if(document.fonts) document.fonts.ready.then(fit);
@@ -4839,7 +5290,7 @@ function newerRound(body, c) {
         requestAnimationFrame(() => buttons.forEach(ditherType));   // printed again in their new colour
         const r = html("div", {class: "game-reveal"}, body);
         const share = Math.round(100 * observedShare(c, 2020));
-        r.innerHTML = `<div class="big">${right ? "Doğru!" : "Yanlış."} Yeni olan: ${esc(neu)}</div>` +
+        r.innerHTML = `<div class="big verdict ${right ? "ok" : "no"}">${right ? "✓ Doğru!" : "✕ Yanlış."} Yeni olan: ${esc(neu)}</div>` +
             (crossed ? `<p><b>${esc(neu)}</b> (eğride mavi), meclisin konuşmalarında <b>${esc(old)}</b> sözcüğünü ${Math.round(c.fit.crossover)} yılında geçti; 2020'de kullanımın %${share}'${numberSuffix(share, "poss")}.</p>`
                      : `<p><b>${esc(neu)}</b> (eğride mavi) önerildi ama meclis bugün de çoğunlukla <b>${esc(old)}</b> diyor: 2020'de yenisi kullanımın yalnızca %${share}'${numberSuffix(share, "poss")}.</p>`) +
             `<div class="spark">${sparkSvg(YEARS, YEARS.map(y => observed(c, y)), css("--new"))}</div>`;
