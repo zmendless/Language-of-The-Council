@@ -491,12 +491,28 @@ main { counter-reset: sitting; }
 
 /* timeline side cards */
 .split { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
-/* The calendar's chart is far taller than its side cards: on a screen tall enough to hold
-   them, they stay in view under the menu while its rows go by. */
-@media (min-width: 861px) and (min-height: 760px) {
-    #takvim .side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 66px); }
-}
 .side { display: grid; gap: 16px; }
+/* "Ayrıntılar": the chapter's one chart stands alone, and what supports it is opened on demand,
+   a ruled line with a typewriter label like the method's items. Closed, the body is folded to
+   no height but keeps its width (a closed <details> would not), so the charts inside draw
+   at the right size and nothing needs redrawing on opening. It opens by growing a grid row
+   from 0 to its content (the body's one child is the thing that shrinks), and the chevron
+   turns over as it does. */
+.split.calm { grid-template-columns: minmax(0, 1fr); }
+.fold { margin-top: 22px; border-top: 1px solid var(--ink); }
+.split.calm > .fold { margin-top: 0; }
+.fold-head { width: 100%; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 14px 0; border: 0; background: none; color: var(--ink); text-align: left; font: 700 0.9rem var(--type); letter-spacing: 0.08em; text-transform: uppercase; }
+.fold-head::after { content: ""; flex: none; align-self: center; width: 1.15rem; height: 1.15rem; background: var(--faint); transition: transform 0.45s cubic-bezier(0.3, 0.6, 0.2, 1), background 0.2s;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 5.5 8 11l5.5-5.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 5.5 8 11l5.5-5.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat; }
+.fold.open > .fold-head::after { transform: rotate(180deg); }
+.fold-head:hover { color: var(--print-t); }
+.fold-head:hover::after { background: var(--print-t); }
+.fold-head:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.fold-body { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows 0.45s cubic-bezier(0.3, 0.6, 0.2, 1), visibility 0s 0.45s; }
+.fold.open > .fold-body { grid-template-rows: 1fr; visibility: visible; transition-delay: 0s; }
+.fold-body > * { min-height: 0; overflow: hidden; }
+.fold-body > .side { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; padding-bottom: 8px; }
 .side h3 { margin-bottom: 8px; }
 .side .sub { font-size: 0.88rem; color: var(--muted); margin: -6px 0 10px; }
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 0.98rem; }
@@ -938,6 +954,19 @@ html.game-on body > :not(#game):not(.tip):not(.word-line):not(.field) { display:
 .game-reveal .verdict.ok { color: var(--yes); }
 .game-reveal .verdict { font-family: var(--display), "Segoe UI Symbol", "DejaVu Sans", sans-serif; }
 .game-reveal .verdict.no { color: var(--no); }
+/* game 8: two columns of words with room between them for the lines that join the pairs */
+.game-match { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 0 clamp(36px, 9vw, 150px); }
+.game-col { display: grid; gap: clamp(6px, 1.4vh, 14px); }
+.game-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.game-line { stroke: var(--yes); stroke-width: 3; stroke-linecap: round; }
+.game-line.draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: gapDraw2 0.4s ease-out forwards; }
+@keyframes gapDraw2 { to { stroke-dashoffset: 0; } }
+.game-pick.game-tile { min-height: 44px; --pad: calc(clamp(8px, 1.8vh, 20px) * var(--gs, 1)); padding: calc(var(--pad) - 3px) 10px calc(var(--pad) + 0.9rem);   /* the strip under the word is for the note of a right pair */ font-size: calc(clamp(1.3rem, min(2.8vw, 5vh), 2.8rem) * var(--gs, 1)); overflow-wrap: anywhere; }
+.game-pick.game-tile:hover:not(:disabled) { padding: calc(var(--pad) - 4px) 9px calc(var(--pad) + 0.9rem - 1px); }
+.game-pick.game-tile.picked { border: 3px solid var(--ink); background: var(--surface); outline: 2px dotted var(--ink); outline-offset: 3px; }
+.game-pick.game-tile.right::after, .game-pick.game-tile.wrong::after { content: ""; }
+.game-pick.game-tile.right[data-note]::after { content: attr(data-note); top: auto; bottom: 3px; right: 8px; font-size: 0.7rem; letter-spacing: 0.02em; -webkit-text-fill-color: currentColor; }
+.game-pick.game-tile.wrong::after { content: "✕"; }
 .game-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .game .spark { width: 100%; max-width: 560px; height: clamp(40px, 6vh, 64px); }
 /* Jury mode (J, or #juri): under every chart, how it was calculated: the data, the method,
@@ -966,6 +995,8 @@ html.jury .jury-badge { display: block; }
     .game-title { overflow-wrap: anywhere; }
     .game-guess, .game-actions { position: sticky; bottom: 14px; z-index: 5; background: var(--bg); box-shadow: 0 0 0 8px var(--bg); }
     .game-modes { gap: 0; }
+    /* a long word (cumhurbaşkanı) in a half-width tile: the size follows the word's length (--len, set by matchRound) */
+    .game-pick.game-tile { font-size: calc(min(1.3rem, (50vw - 62px) / (var(--len, 8) * 0.62)) * var(--gs, 1)); padding-inline: 6px; }
 }
 /* the keyboard's first stop: a link past the first screen and the menu, shown only when focused */
 .skip { position: absolute; left: 12px; top: -60px; z-index: 50; padding: 10px 16px; background: var(--ink); color: var(--bg); font: 700 0.95rem var(--type); text-decoration: none; border-radius: var(--round); }
@@ -986,6 +1017,8 @@ main:focus { outline: none; }
     .panel, .decade, .quote, .fact .card, .stats, figure { break-inside: avoid; }
     h2, h3 { break-after: avoid; }
     .reveal { opacity: 1 !important; transform: none !important; }
+    .fold-body { grid-template-rows: 1fr; visibility: visible; }
+    .fold-head::after { display: none; }
     .sweep > svg, .sweep-down > svg { clip-path: none !important; }
     a { color: inherit; }
     #method details > p { display: block; }
@@ -1002,7 +1035,7 @@ main:focus { outline: none; }
     .btn.play::before { transition: none; }
     .caret { animation: none; }
     .voice.in { animation: none; }
-    .morph, .morph-old, .morph-arrow { transition: none; }
+    .morph, .morph-old, .morph-arrow, .fold-body, .fold-head::after { transition: none; }
     .sound.waiting { animation: none; background: color-mix(in srgb, var(--print) 15%, transparent); }
     .reveal { opacity: 1; transform: none; }
     .sweep > svg, .sweep-down > svg { clip-path: none !important; animation: none !important; }
@@ -1176,13 +1209,15 @@ if(location.hash === "#sergibig") document.documentElement.classList.add("sergib
                 <h2 id="takvim-title">Yeni sözcük ne zaman öne geçti?</h2>
                 <p class="intro" id="takvim-intro"></p>
             </div>
-            <div class="split">
+            <div class="split calm">
                 <div class="panel"><div class="chart" id="timeline"></div></div>
-                <div class="side">
-                    <div class="panel" id="failed"></div>
-                    <div class="panel" id="themes"></div>
-                    <div class="panel"><h3>Değişimler ne zaman yoğunlaştı?</h3><p class="sub">beş yılda yeni sözcüğe geçen kavram sayısı</p><div class="chart" id="histogram"></div></div>
-                </div>
+                <div class="fold"><button type="button" class="fold-head" aria-expanded="false">Ayrıntılar: geçemeyenler, temalar, değişimlerin yoğunluğu</button><div class="fold-body">
+                    <div class="side">
+                        <div class="panel" id="failed"></div>
+                        <div class="panel" id="themes"></div>
+                        <div class="panel"><h3>Değişimler ne zaman yoğunlaştı?</h3><p class="sub">beş yılda yeni sözcüğe geçen kavram sayısı</p><div class="chart" id="histogram"></div></div>
+                    </div>
+                </div></div>
             </div>
         </div>
     </section>
@@ -1222,11 +1257,14 @@ if(location.hash === "#sergibig") document.documentElement.classList.add("sergib
                 <p class="intro" id="koken-intro"></p>
             </div>
             <div class="panel"><div class="chart" id="origins"></div></div>
+            <div class="fold"><button type="button" class="fold-head" aria-expanded="false">Ayrıntılar: sözcükler uzadı mı?</button><div class="fold-body">
             <div class="panel wordlen">
                 <h3 id="wordlen-title">Sözcükler uzadı mı?</h3>
                 <p class="sub" id="wordlen-sub"></p>
                 <div class="chart" id="wordlen"></div>
             </div>
+            </div></div>
+            <div class="fold"><button type="button" class="fold-head" aria-expanded="false">Ayrıntılar: yüz yılın bütün sözcükleri</button><div class="fold-body">
             <div class="panel wf">
                 <h3 id="wf-title">Yüz yılın bütün sözcükleri</h3>
                 <p class="sub" id="wf-sub"></p>
@@ -1237,6 +1275,7 @@ if(location.hash === "#sergibig") document.documentElement.classList.add("sergib
                 </div>
                 <div class="chart" id="wfield"></div>
             </div>
+            </div></div>
         </div>
     </section>
 
@@ -1248,12 +1287,14 @@ if(location.hash === "#sergibig") document.documentElement.classList.add("sergib
                 <h2 id="omur-title">1920'lerin sözcüklerinden kaçı hâlâ yaşıyor?</h2>
                 <p class="intro" id="omur-intro"></p>
             </div>
-            <div class="split">
+            <div class="split calm">
                 <div class="panel"><div class="chart" id="survival"></div></div>
+                <div class="fold"><button type="button" class="fold-head" aria-expanded="false">Ayrıntılar: kaybolan ve direnen sözcükler</button><div class="fold-body">
                 <div class="side">
                     <div class="panel"><h3 style="color: var(--old-t)">Kaybolanlar</h3><p class="sub">1920'lerin sık sözcükleri, bugün neredeyse hiç</p><div class="wordlist" id="lost"></div></div>
                     <div class="panel"><h3 style="color: var(--new-t)">Direnenler</h3><p class="sub">bugün de güçlü Arapça ve Farsça sözcükler</p><div class="wordlist" id="kept"></div></div>
                 </div>
+                </div></div>
             </div>
         </div>
     </section>
@@ -1316,7 +1357,7 @@ if(location.hash === "#sergibig") document.documentElement.classList.add("sergib
                 <h2 id="tarih-title">Bir metni okuyup yılını tahmin eden program</h2>
                 <p class="intro" id="tarih-intro"></p>
             </div>
-            <div class="split">
+            <div class="split calm">
                 <div class="panel">
                     <label for="d-text" class="eyebrow">Metin</label>
                     <textarea id="d-text" rows="6" placeholder="Buraya bir paragraf yapıştırın: bir gazete haberi, eski bir mektup, bir dilekçe…"></textarea>
@@ -1327,6 +1368,7 @@ if(location.hash === "#sergibig") document.documentElement.classList.add("sergib
                     <p class="d-colored" id="d-colored"></p>
                     <div class="legend era-legend" id="d-legend"></div>
                 </div>
+                <div class="fold"><button type="button" class="fold-head" aria-expanded="false">Ayrıntılar: program ne kadar doğru?</button><div class="fold-body">
                 <aside class="side">
                     <div class="panel">
                         <h3>Ne kadar iyi?</h3>
@@ -1339,6 +1381,7 @@ if(location.hash === "#sergibig") document.documentElement.classList.add("sergib
                         <div class="chart" id="d-scatter"></div>
                     </div>
                 </aside>
+                </div></div>
             </div>
         </div>
     </section>
@@ -2373,6 +2416,9 @@ function morph() {
         return;
     }
     const wait = ms => new Promise(done => setTimeout(done, ms));
+    // The first screen types three meanings and then rests on the last one, finished; the stand
+    // shows (#sergi, #sergibig) go round for as long as they run.
+    const standing = () => SERGI.on || document.documentElement.classList.contains("sergibig");
     const run = async () => {
         for(let i = 0; ; i++) {
             while(!HERO.visible || heroCovered()) await wait(400);   // the first screen waits while scrolled away or covered
@@ -2403,6 +2449,7 @@ function morph() {
             if(!heroCovered()) SFX.bell();
             await wait(650);
             caret.classList.add("gone");
+            if(i + 1 >= 3) while(!standing()) await wait(500);   // at rest, until a stand show asks for more
             await wait(1700);
             box.classList.add("out");
             await wait(400);
@@ -4592,6 +4639,17 @@ new ResizeObserver(() => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(drawAll, 120);
 }).observe(document.body);
+function setMore(more, open) {
+    more.classList.toggle("open", open);
+    more.querySelector(".fold-head").setAttribute("aria-expanded", open);
+    if(FIELD.redraw) setTimeout(FIELD.redraw, 500);   // the page got longer: the side dots follow
+}
+document.querySelectorAll(".fold").forEach((more, k) => {
+    const head = more.querySelector(".fold-head"), body = more.querySelector(".fold-body");
+    body.id = "fold-" + k;
+    head.setAttribute("aria-controls", body.id);
+    head.addEventListener("click", () => setMore(more, !more.classList.contains("open")));
+});
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll);
 new MutationObserver(drawAll).observe(document.documentElement, {attributes: true, attributeFilter: ["data-theme"]});
 if(document.fonts) document.fonts.ready.then(drawAll);
@@ -4770,7 +4828,7 @@ function gameMenu() {
     document.getElementById("game-back").hidden = true;
     const body = document.getElementById("game-body");
     body.innerHTML = `<h1 class="game-title">Meclisin dili: oyun</h1>
-        <p class="game-lede">Yüz yıllık tutanaklardan gerçek cümleler ve sözcükler. Yedi oyun.</p>
+        <p class="game-lede">Yüz yıllık tutanaklardan gerçek cümleler ve sözcükler. Sekiz oyun.</p>
         <div class="game-modes">
             <button class="game-mode" type="button" data-mode="yil"><i>OYUN 1</i><b>Hangi yıldan?</b><span>Tutanaklardan bir cümle: yılını tahmin edin. Programın tahminiyle yarışın.</span></button>
             <button class="game-mode" type="button" data-mode="yeni"><i>OYUN 2</i><b>Hangisi daha yeni?</b><span>Aynı anlama gelen iki sözcük: hangisi sonradan geldi?</span></button>
@@ -4779,6 +4837,7 @@ function gameMenu() {
             <button class="game-mode" type="button" data-mode="sikyeni"><i>OYUN 5</i><b>Eski mi, yeni mi: hangisi daha sık?</b><span>Aynı anlama gelen eski ve yeni sözcük, bir on yıl: o yıllarda hangisi daha çok söylendi?</span></button>
             <button class="game-mode" type="button" data-mode="sira"><i>OYUN 6</i><b>Sıraya dizin</b><span>Dört gerçek cümle karışık geldi: en eskiden en yeniye dizin.</span></button>
             <button class="game-mode" type="button" data-mode="koken"><i>OYUN 7</i><b>Türkçe olanları seçin</b><span>Gerçek bir cümle, bazı sözcükleri işaretli: hangileri Türkçe kökenli? Gerisi Arapça, Farsça ya da Batı dillerinden.</span></button>
+            <button class="game-mode" type="button" data-mode="esles"><i>OYUN 8</i><b>Eşleştirin</b><span>Beş eski sözcük, beş yeni sözcük: her eskinin yerini alanı bulun.</span></button>
         </div>`;
     body.querySelectorAll(".game-mode").forEach(b => b.addEventListener("click", () => startGame(b.dataset.mode)));
     printGame();
@@ -4790,6 +4849,7 @@ function gameItems(mode) {
     if(mode === "sikyeni") return pairFrequencyItems();
     if(mode === "sira") return orderItems();
     if(mode === "koken") return originItems();
+    if(mode === "esles") return matchItems();
     if(mode === "bosluk") return blankItems();
     if(mode === "yil") {
         // five sentences from five different twenty-year stretches, so a batch spans the century
@@ -4842,6 +4902,7 @@ function nextRound() {
     else if(GAME.mode === "sik" || GAME.mode === "sikyeni") frequencyRound(body, item);
     else if(GAME.mode === "sira") orderRound(body, item);
     else if(GAME.mode === "koken") originRound(body, item);
+    else if(GAME.mode === "esles") matchRound(body, item);
     else newerRound(body, item);
     printGame();
 }
@@ -5302,6 +5363,85 @@ function newerRound(body, c) {
         next.focus({preventScroll: true});
     }));
 }
+// ---- game 8: matching. Five old words on the left, the five new words that replaced them on the
+// right, mixed; the visitor taps one on a side and then one on the other. A right pair is joined
+// by a line and the new word says when it took over; a wrong one is only counted. Boards of five
+// meanings, all different words, as many boards as there are meanings.
+function matchItems() {
+    const pool = shuffle(D.concepts.filter(c => c.oldWord && c.newWord && c.oldWord !== c.newWord)), boards = [];
+    for(let i = 0; i + 5 <= pool.length; i += 5) boards.push(pool.slice(i, i + 5));
+    return boards;
+}
+function matchRound(body, board) {
+    html("h2", {class: "game-title"}, body, "Eşleştirin");
+    html("p", {class: "game-lede"}, body, "Soldaki eski sözcüğü, yerini alan yeni sözcükle eşleştirin: önce birini, sonra ötekini seçin.");
+    const grid = html("div", {class: "game-match"}, body);
+    const lines = svg("svg", {class: "game-lines", "aria-hidden": "true"}, grid);
+    const tile = (c, text, side) => { const b = html("button", {class: "game-pick game-tile", type: "button"}, grid, text); b.c = c; b.side = side; b.style.setProperty("--len", [...text].length); return b; };
+    const left = html("div", {class: "game-col"}, grid), right = html("div", {class: "game-col"}, grid);
+    const olds = board.map(c => tile(c, c.oldWord, "o")), news = shuffle(board.map(c => tile(c, c.newWord, "n")));
+    olds.forEach(b => left.append(b));
+    news.forEach(b => right.append(b));
+    const joined = [];
+    let sel = null, mistakes = 0;
+    const reprint = (...bs) => requestAnimationFrame(() => bs.forEach(ditherType));
+    const drawLines = () => {
+        const g = grid.getBoundingClientRect();
+        lines.textContent = "";
+        for(const [a, b] of joined) {
+            const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+            const x1 = ra.right - g.left, y1 = ra.top + ra.height / 2 - g.top, x2 = rb.left - g.left, y2 = rb.top + rb.height / 2 - g.top;
+            svg("line", {x1, y1, x2, y2, pathLength: 1, class: "game-line" + (b.fresh && !(STILL || reduceMotion) ? " draw" : "")}, lines);
+            b.fresh = false;
+        }
+    };
+    const resized = new ResizeObserver(() => { if(!grid.isConnected) return resized.disconnect(); drawLines(); });   // the lines follow the tiles when the screen is fitted again
+    resized.observe(grid);
+    [...olds, ...news].forEach(b => b.addEventListener("click", () => {
+        if(b.classList.contains("right")) return;
+        if(!sel || sel.side === b.side) {   // the first of a pair, or another one on the same side
+            if(sel) sel.classList.remove("picked");
+            sel = sel === b ? null : b;
+            if(sel) sel.classList.add("picked");
+            SFX.tick(false);
+            return;
+        }
+        const a = sel;
+        sel = null;
+        a.classList.remove("picked");
+        GAME.answered++;
+        if(a.c !== b.c) {
+            mistakes++;
+            SFX.click();
+            [a, b].forEach(x => x.classList.add("wrong"));
+            reprint(a, b);
+            setTimeout(() => { [a, b].forEach(x => x.classList.remove("wrong")); reprint(a, b); }, 650);
+            gameScore();
+            return;
+        }
+        GAME.me++;
+        gameScore();
+        const [o, n] = a.side === "o" ? [a, b] : [b, a];
+        const c = o.c, lead = c.crossed ? `${Math.round(c.fit.crossover)}'da geçti` : "bugün hâlâ geride";
+        [o, n].forEach(x => { x.classList.add("right"); x.disabled = true; });
+        n.dataset.note = lead;
+        n.fresh = true;
+        joined.push([o, n]);
+        drawLines();
+        reprint(o, n);
+        SFX.pen();
+        if(joined.length < board.length) return;
+        const clean = mistakes === 0, r = html("div", {class: "game-reveal"}, body);
+        r.innerHTML = `<div class="big verdict ${clean ? "ok" : "no"}">${clean ? "✓ Hiç yanlışsız!" : `${mistakes} yanlış denemeyle bitti.`}</div>
+            <p>Her yeni sözcüğün altındaki not, meclis konuşmalarında eskisini geçtiği yılı gösterir; “bugün hâlâ geride” olanı meclis bugün de eski adıyla anıyor.</p>`;
+        r.querySelector(".big").classList.add("stamped");
+        printGame();
+        SFX.stamp();
+        const next = html("button", {class: "btn primary", type: "button"}, html("div", {class: "game-actions"}, body), "Sonraki beş");
+        next.addEventListener("click", nextRound);
+        next.focus({preventScroll: true});
+    }));
+}
 // The band of orange print along the bottom: one pixel per 2px dot, inked when its Bayer
 // threshold is under the density, which grows from nothing at the top to solid at the foot.
 function drawGamePrint() {
@@ -5505,7 +5645,9 @@ async function runExhibition() {
             await wait(5000);
             setFullscreen(false);
             await wait(800);
-            // 3. the century's words, year by year
+            // 3. the century's words, year by year (its chapter folds it away: open it first)
+            const fold = document.getElementById("wfield").closest(".fold");
+            if(!fold.classList.contains("open")) { setMore(fold, true); await wait(600); }
             await go("wfield");
             await until(() => WF.started);
             document.getElementById("wf-play").click();
